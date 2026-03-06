@@ -431,7 +431,7 @@ func walkMappingConstructorExpr(cx *FunctionContext, expr *ast.BLangMappingConst
 
 func walkQueryExpr(cx *FunctionContext, expr *ast.BLangQueryExpr) desugaredNode[model.ExpressionNode] {
 	if len(expr.QueryClauseList) < 2 {
-		cx.unimplemented("query expression currently supports only from + let + where + select clauses")
+		cx.unimplemented("query expression currently supports only from + let + where + limit + select clauses")
 		return desugaredNode[model.ExpressionNode]{replacementNode: expr}
 	}
 
@@ -603,8 +603,79 @@ func walkQueryExpr(cx *FunctionContext, expr *ast.BLangQueryExpr) desugaredNode[
 			filterIf.SetScope(cx.currentScope())
 			filterIf.SetDeterminedType(&semtypes.NEVER)
 			bodyStmts = append(bodyStmts, filterIf)
+		case *ast.BLangLimitClause:
+			if clause.Expression == nil {
+				cx.unimplemented("query limit clause requires an expression")
+				return desugaredNode[model.ExpressionNode]{replacementNode: expr}
+			}
+
+			zeroForCount := &ast.BLangNumericLiteral{
+				BLangLiteral: ast.BLangLiteral{
+					Value:         int64(0),
+					OriginalValue: "0",
+				},
+				Kind: model.NodeKind_NUMERIC_LITERAL,
+			}
+			zeroForCount.SetDeterminedType(&semtypes.INT)
+
+			limitCountName, limitCountSymbol := cx.addDesugardSymbol(&semtypes.INT, model.SymbolKindVariable, false)
+			limitCountVar := &ast.BLangSimpleVariable{
+				Name: &ast.BLangIdentifier{Value: limitCountName},
+			}
+			limitCountVar.SetDeterminedType(&semtypes.INT)
+			limitCountVar.SetInitialExpression(zeroForCount)
+			limitCountVar.SetSymbol(limitCountSymbol)
+			initStmts = append(initStmts, &ast.BLangSimpleVariableDef{Var: limitCountVar})
+
+			limitCountRef := &ast.BLangSimpleVarRef{
+				VariableName: limitCountVar.Name,
+			}
+			limitCountRef.SetSymbol(limitCountSymbol)
+			limitCountRef.SetDeterminedType(&semtypes.INT)
+
+			limitResult := walkExpression(cx, clause.Expression)
+			for _, s := range limitResult.initStmts {
+				bodyStmts = append(bodyStmts, s.(ast.BLangStatement))
+			}
+
+			limitValName, limitValSymbol := cx.addDesugardSymbol(&semtypes.INT, model.SymbolKindVariable, false)
+			limitValVar := &ast.BLangSimpleVariable{
+				Name: &ast.BLangIdentifier{Value: limitValName},
+			}
+			limitValVar.SetDeterminedType(&semtypes.INT)
+			limitValVar.SetInitialExpression(limitResult.replacementNode.(ast.BLangExpression))
+			limitValVar.SetSymbol(limitValSymbol)
+			limitValVarDef := &ast.BLangSimpleVariableDef{Var: limitValVar}
+			bodyStmts = append(bodyStmts, limitValVarDef)
+
+			limitValRef := &ast.BLangSimpleVarRef{
+				VariableName: limitValVar.Name,
+			}
+			limitValRef.SetSymbol(limitValSymbol)
+			limitValRef.SetDeterminedType(&semtypes.INT)
+
+			limitReachedExpr := &ast.BLangBinaryExpr{
+				LhsExpr: limitCountRef,
+				RhsExpr: limitValRef,
+				OpKind:  model.OperatorKind_GREATER_EQUAL,
+			}
+			limitReachedExpr.SetDeterminedType(&semtypes.BOOLEAN)
+
+			breakStmt := &ast.BLangBreak{}
+			breakStmt.SetDeterminedType(&semtypes.NEVER)
+			limitReachedBody := ast.BLangBlockStmt{
+				Stmts: []ast.BLangStatement{breakStmt},
+			}
+			limitReachedIf := &ast.BLangIf{
+				Expr: limitReachedExpr,
+				Body: limitReachedBody,
+			}
+			limitReachedIf.SetScope(cx.currentScope())
+			limitReachedIf.SetDeterminedType(&semtypes.NEVER)
+			bodyStmts = append(bodyStmts, limitReachedIf)
+			bodyStmts = append(bodyStmts, createIncrementStmt(limitCountRef))
 		default:
-			cx.unimplemented("query expression currently supports only let + where clauses as intermediate clauses")
+			cx.unimplemented("query expression currently supports only let + where + limit clauses as intermediate clauses")
 			return desugaredNode[model.ExpressionNode]{replacementNode: expr}
 		}
 	}

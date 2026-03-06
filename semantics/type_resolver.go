@@ -827,8 +827,21 @@ func (t *TypeResolver) resolveQueryExpr(expr *ast.BLangQueryExpr) (semtypes.SemT
 				t.ctx.SemanticError("where-clause expression must be boolean", clause.GetPosition())
 				return nil, false
 			}
+		case *ast.BLangLimitClause:
+			if clause.Expression == nil {
+				t.ctx.SemanticError("limit-clause requires an expression", clause.GetPosition())
+				return nil, false
+			}
+			limitTy, ok := t.resolveExpression(clause.Expression)
+			if !ok {
+				return nil, false
+			}
+			if !semtypes.IsSubtypeSimple(limitTy, semtypes.INT) {
+				t.ctx.SemanticError("limit-clause expression must be int", clause.GetPosition())
+				return nil, false
+			}
 		default:
-			t.ctx.Unimplemented("only let + where clauses are supported as intermediate query clauses", clause.GetPosition())
+			t.ctx.Unimplemented("only let + where + limit clauses are supported as intermediate query clauses", clause.GetPosition())
 			return nil, false
 		}
 	}

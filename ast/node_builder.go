@@ -2620,7 +2620,10 @@ func (n *NodeBuilder) TransformOnClause(onClauseNode *tree.OnClauseNode) BLangNo
 }
 
 func (n *NodeBuilder) TransformLimitClause(limitClauseNode *tree.LimitClauseNode) BLangNode {
-	panic("TransformLimitClause unimplemented")
+	limitClause := &BLangLimitClause{}
+	limitClause.pos = getPosition(limitClauseNode)
+	limitClause.Expression = n.createExpression(limitClauseNode.Expression())
+	return limitClause
 }
 
 func (n *NodeBuilder) TransformOnConflictClause(onConflictClauseNode *tree.OnConflictClauseNode) BLangNode {
@@ -2662,10 +2665,10 @@ func (n *NodeBuilder) TransformQueryExpression(queryExpressionNode *tree.QueryEx
 	for i := 0; i < intermediateClauses.Size(); i++ {
 		clause := intermediateClauses.Get(i)
 		switch clause.Kind() {
-		case common.FROM_CLAUSE, common.LET_CLAUSE, common.WHERE_CLAUSE:
+		case common.FROM_CLAUSE, common.LET_CLAUSE, common.WHERE_CLAUSE, common.LIMIT_CLAUSE:
 			queryExpr.QueryClauseList = append(queryExpr.QueryClauseList, n.TransformSyntaxNode(clause))
 		default:
-			n.cx.Unimplemented("only from + let + where + select query clauses are supported for now", getPosition(clause))
+			n.cx.Unimplemented("only from + let + where + limit + select query clauses are supported for now", getPosition(clause))
 		}
 	}
 
