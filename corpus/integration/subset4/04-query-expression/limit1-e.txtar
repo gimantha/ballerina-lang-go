@@ -1,5 +1,4 @@
 -- stdout --
-
 -- stderr --
 error[SEMANTIC_ERROR]: limit-clause expression must be int
   --> limit1-e.bal:20:9

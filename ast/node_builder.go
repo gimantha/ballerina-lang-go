@@ -1525,7 +1525,7 @@ func (n *NodeBuilder) TransformCompoundAssignmentStatement(compoundAssignmentStm
 	bLCompAssignment.SetExpression(n.createExpression(compoundAssignmentStmtNode.RhsExpression()))
 	bLCompAssignment.SetVariable(n.createExpression(compoundAssignmentStmtNode.LhsExpression()))
 	BLangNode(bLCompAssignment).SetPosition(getPosition(compoundAssignmentStmtNode))
-	bLCompAssignment.OpKind = model.OperatorKind_valueFrom(compoundAssignmentStmtNode.BinaryOperator().Text())
+	bLCompAssignment.OpKind = model.OperatorKindValueFrom(compoundAssignmentStmtNode.BinaryOperator().Text())
 	return bLCompAssignment
 }
 
@@ -1712,7 +1712,9 @@ func (n *NodeBuilder) TransformContinueStatement(continueStatementNode *tree.Con
 }
 
 func (n *NodeBuilder) TransformExternalFunctionBody(externalFunctionBodyNode *tree.ExternalFunctionBodyNode) BLangNode {
-	panic("TransformExternalFunctionBody unimplemented")
+	body := &BLangExternFunctionBody{}
+	body.pos = getPosition(externalFunctionBodyNode)
+	return body
 }
 
 func (n *NodeBuilder) TransformIfElseStatement(ifElseStatementNode *tree.IfElseStatementNode) BLangNode {
@@ -1748,7 +1750,10 @@ func (n *NodeBuilder) TransformWhileStatement(whileStatementNode *tree.WhileStat
 }
 
 func (n *NodeBuilder) TransformPanicStatement(panicStatementNode *tree.PanicStatementNode) BLangNode {
-	panic("TransformPanicStatement unimplemented")
+	bLPanic := &BLangPanic{}
+	bLPanic.pos = getPosition(panicStatementNode)
+	bLPanic.Expr = n.createExpression(panicStatementNode.Expression())
+	return bLPanic
 }
 
 func (n *NodeBuilder) TransformReturnStatement(returnStatementNode *tree.ReturnStatementNode) BLangNode {
@@ -1819,7 +1824,7 @@ func (n *NodeBuilder) TransformBinaryExpression(binaryExpressionNode *tree.Binar
 	if binaryExpressionNode.Operator() == nil {
 		operator = model.OperatorKind_UNDEFINED
 	} else {
-		operator = model.OperatorKind_valueFrom(binaryExpressionNode.Operator().Text())
+		operator = model.OperatorKindValueFrom(binaryExpressionNode.Operator().Text())
 	}
 	bLBinaryExpr.OpKind = operator
 	return &bLBinaryExpr
@@ -1830,7 +1835,18 @@ func (n *NodeBuilder) TransformBracedExpression(bracedExpressionNode *tree.Brace
 }
 
 func (n *NodeBuilder) TransformCheckExpression(checkExpressionNode *tree.CheckExpressionNode) BLangNode {
-	panic("TransformCheckExpression unimplemented")
+	pos := getPosition(checkExpressionNode)
+	expr := n.createExpression(checkExpressionNode.Expression())
+	if checkExpressionNode.CheckKeyword().Kind() == common.CHECK_KEYWORD {
+		checkedExpr := &BLangCheckedExpr{}
+		checkedExpr.pos = pos
+		checkedExpr.Expr = expr
+		return checkedExpr
+	}
+	checkPanickedExpr := &BLangCheckPanickedExpr{}
+	checkPanickedExpr.pos = pos
+	checkPanickedExpr.Expr = expr
+	return checkPanickedExpr
 }
 
 func (n *NodeBuilder) TransformFieldAccessExpression(fieldAccessExpressionNode *tree.FieldAccessExpressionNode) BLangNode {
@@ -1959,7 +1975,7 @@ func (n *NodeBuilder) TransformTypeofExpression(typeofExpressionNode *tree.Typeo
 
 func (n *NodeBuilder) TransformUnaryExpression(unaryExpressionNode *tree.UnaryExpressionNode) BLangNode {
 	pos := getPosition(unaryExpressionNode)
-	operator := model.OperatorKind_valueFrom(unaryExpressionNode.UnaryOperator().Text())
+	operator := model.OperatorKindValueFrom(unaryExpressionNode.UnaryOperator().Text())
 	expr := n.createExpression(unaryExpressionNode.Expression())
 	return createBLangUnaryExpr(pos, operator, expr)
 }
@@ -2359,7 +2375,12 @@ func (n *NodeBuilder) TransformBuiltinSimpleNameReference(builtinSimpleNameRefer
 }
 
 func (n *NodeBuilder) TransformTrapExpression(trapExpressionNode *tree.TrapExpressionNode) BLangNode {
-	panic("TransformTrapExpression unimplemented")
+	pos := getPosition(trapExpressionNode)
+	expr := n.createExpression(trapExpressionNode.Expression())
+	trapExpr := &BLangTrapExpr{}
+	trapExpr.pos = pos
+	trapExpr.Expr = expr
+	return trapExpr
 }
 
 func (n *NodeBuilder) TransformListConstructorExpression(listConstructorExpressionNode *tree.ListConstructorExpressionNode) BLangNode {
@@ -2910,7 +2931,85 @@ func (n *NodeBuilder) TransformTypeReferenceTypeDesc(typeReferenceTypeDescNode *
 }
 
 func (n *NodeBuilder) TransformMatchStatement(matchStatementNode *tree.MatchStatementNode) BLangNode {
-	panic("TransformMatchStatement unimplemented")
+	matchStatement := &BLangMatchStatement{}
+	matchStmtExpr := n.createExpression(matchStatementNode.Condition())
+	matchStatement.Expr = matchStmtExpr
+
+	matchClauses := matchStatementNode.MatchClauses()
+	for matchClauseNode := range matchClauses.Iterator() {
+		bLangMatchClause := &BLangMatchClause{}
+		bLangMatchClause.pos = getPosition(matchClauseNode)
+
+		// Handle match guard
+		if matchClauseNode.MatchGuard() != nil {
+			matchGuardNode := matchClauseNode.MatchGuard()
+			bLangMatchClause.Guard = n.createExpression(matchGuardNode.Expression())
+		}
+
+		// Handle match patterns
+		matchPatterns := matchClauseNode.MatchPatterns()
+		for matchPattern := range matchPatterns.Iterator() {
+			bLangMatchPattern := n.transformMatchPattern(matchPattern, matchStmtExpr)
+			if bLangMatchPattern != nil {
+				bLangMatchClause.Patterns = append(bLangMatchClause.Patterns, bLangMatchPattern)
+			}
+		}
+
+		// Handle block statement
+		bLangMatchClause.Body = *n.TransformBlockStatement(matchClauseNode.BlockStatement()).(*BLangBlockStmt)
+
+		matchStatement.MatchClauses = append(matchStatement.MatchClauses, *bLangMatchClause)
+	}
+
+	matchStatement.pos = getPosition(matchStatementNode)
+	return matchStatement
+}
+
+func (n *NodeBuilder) transformMatchPattern(matchPattern tree.Node, matchStmtExpr BLangExpression) BLangMatchPattern {
+	matchPatternPos := getPosition(matchPattern)
+	kind := matchPattern.Kind()
+
+	switch kind {
+	case common.SIMPLE_NAME_REFERENCE:
+		nameRef := matchPattern.(*tree.SimpleNameReferenceNode)
+		if nameRef.Name().Text() != "_" {
+			n.cx.SemanticError("expected wildcard '_' but got: "+nameRef.Name().Text(), matchPatternPos)
+			return nil
+		}
+		bLangWildCard := &BLangWildCardMatchPattern{}
+		bLangWildCard.pos = matchPatternPos
+		return bLangWildCard
+
+	case common.IDENTIFIER_TOKEN:
+		idToken := matchPattern.(tree.Token)
+		if idToken.Text() != "_" {
+			n.cx.SemanticError("expected wildcard '_' but got: "+idToken.Text(), matchPatternPos)
+			return nil
+		}
+		bLangWildCard := &BLangWildCardMatchPattern{}
+		bLangWildCard.pos = matchPatternPos
+		return bLangWildCard
+
+	case common.NUMERIC_LITERAL,
+		common.STRING_LITERAL,
+		common.QUALIFIED_NAME_REFERENCE,
+		common.NULL_LITERAL,
+		common.NIL_LITERAL,
+		common.BOOLEAN_LITERAL,
+		common.UNARY_EXPRESSION:
+		bLangConstPattern := &BLangConstPattern{}
+		bLangConstPattern.Expr = n.createExpression(matchPattern)
+		bLangConstPattern.pos = matchPatternPos
+		return bLangConstPattern
+
+	case common.PIPE_TOKEN, common.COMMA_TOKEN:
+		// Skip separator tokens in match pattern lists
+		return nil
+
+	default:
+		n.cx.InternalError(fmt.Sprintf("unexpected match pattern kind: %v", kind), matchPatternPos)
+		return nil
+	}
 }
 
 func (n *NodeBuilder) TransformMatchClause(matchClauseNode *tree.MatchClauseNode) BLangNode {
@@ -3285,7 +3384,13 @@ func getNextMissingNodeName(pkgID *model.PackageID) string {
 func (n *NodeBuilder) getBLangVariableNode(bindingPattern tree.BindingPatternNode, varPos Location) model.VariableNode {
 	var varName tree.Token
 	switch bindingPattern.Kind() {
-	case common.MAPPING_BINDING_PATTERN, common.LIST_BINDING_PATTERN, common.ERROR_BINDING_PATTERN, common.REST_BINDING_PATTERN, common.WILDCARD_BINDING_PATTERN:
+	case common.WILDCARD_BINDING_PATTERN:
+		ignore := createIgnoreIdentifier(bindingPattern)
+		simpleVar := createSimpleVariableNode()
+		simpleVar.SetName(&ignore)
+		simpleVar.pos = varPos
+		return simpleVar
+	case common.MAPPING_BINDING_PATTERN, common.LIST_BINDING_PATTERN, common.ERROR_BINDING_PATTERN, common.REST_BINDING_PATTERN:
 		panic("unimplemented")
 	case common.CAPTURE_BINDING_PATTERN:
 		fallthrough

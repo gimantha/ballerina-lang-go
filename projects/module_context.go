@@ -1,31 +1,22 @@
-/*
- * Copyright (c) 2026, WSO2 LLC. (http://www.wso2.com).
- *
- * WSO2 LLC. licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
+// Copyright (c) 2026, WSO2 LLC. (http://www.wso2.com).
+//
+// WSO2 LLC. licenses this file to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 package projects
 
 import (
-	"fmt"
-	"maps"
-	"os"
-	"slices"
-	"strings"
-	"sync"
-
 	"ballerina-lang-go/ast"
 	"ballerina-lang-go/bir"
 	"ballerina-lang-go/context"
@@ -34,6 +25,12 @@ import (
 	"ballerina-lang-go/parser/tree"
 	"ballerina-lang-go/semantics"
 	"ballerina-lang-go/tools/diagnostics"
+	"fmt"
+	"maps"
+	"os"
+	"slices"
+	"strings"
+	"sync"
 )
 
 // moduleContext holds internal state for a Module.
@@ -220,18 +217,24 @@ func resolveTypesAndSymbols(moduleCtx *moduleContext) {
 	pkgNode := buildBLangPackage(compilerCtx, syntaxTrees, compilationOptions)
 	moduleCtx.bLangPkg = pkgNode
 
+	pkgNode.PackageID = createModelPackageID(compilerCtx, moduleCtx.moduleDescriptor)
+
 	// Resolve symbols (imports) before type resolution
-	importedSymbols := semantics.ResolveImports(compilerCtx, pkgNode, semantics.GetImplicitImports(compilerCtx))
+	publicSymbols := moduleCtx.getProject().Environment().publicSymbols
+	importedSymbols := semantics.ResolveImports(compilerCtx, pkgNode, semantics.GetImplicitImports(compilerCtx), publicSymbols, moduleCtx.moduleDescriptor.Org().value)
 	moduleCtx.importedSymbols = importedSymbols
-	semantics.ResolveSymbols(compilerCtx, pkgNode, importedSymbols)
+
+	publicSymbols[semantics.PackageIdentifier{
+		OrgName:    moduleCtx.moduleDescriptor.Org().value,
+		ModuleName: moduleCtx.moduleID.moduleName,
+	}] = semantics.ResolveSymbols(compilerCtx, pkgNode, importedSymbols)
 
 	if compilerCtx.HasDiagnostics() {
 		return
 	}
 
-	// Add type resolution step
-	typeResolver := semantics.NewTypeResolver(compilerCtx, importedSymbols)
-	typeResolver.ResolveTypes(compilerCtx, pkgNode)
+	// Add type resolution step (this only resolve types of top level nodes)
+	semantics.ResolveTopLevelNodes(compilerCtx, pkgNode, importedSymbols)
 }
 
 // analyzeAndDesugar performs CFG creation, semantic analysis, CFG analysis, and desugaring.
@@ -249,9 +252,23 @@ func analyzeAndDesugar(moduleCtx *moduleContext) {
 		return
 	}
 
-	// Create control flow graph before semantic analysis.
-	// CFG is needed for conditional type narrowing during semantic analysis.
+	// Resolve types of function bodies and inner nodes
+	semantics.ResolveLocalNodes(compilerCtx, pkgNode, moduleCtx.importedSymbols)
+	if compilerCtx.HasDiagnostics() {
+		return
+	}
+
+	semanticAnalyzer := semantics.NewSemanticAnalyzer(moduleCtx.compilerCtx)
+	semanticAnalyzer.Analyze(pkgNode)
+	if compilerCtx.HasDiagnostics() {
+		return
+	}
+
+	// Create control flow graph after semantic analysis.
 	cfg := semantics.CreateControlFlowGraph(compilerCtx, pkgNode)
+	if compilerCtx.HasDiagnostics() {
+		return
+	}
 
 	// Dump CFG if requested
 	if compilationOptions.DumpCFG() {
@@ -267,18 +284,15 @@ func analyzeAndDesugar(moduleCtx *moduleContext) {
 		fmt.Fprintln(os.Stderr, "===================END CFG===================")
 	}
 
-	// Run type narrowing analysis before semantic analysis.
-	semantics.NarrowTypes(compilerCtx, pkgNode)
-
-	semanticAnalyzer := semantics.NewSemanticAnalyzer(compilerCtx)
-	semanticAnalyzer.Analyze(pkgNode)
-
 	if compilerCtx.HasDiagnostics() {
 		return
 	}
 
 	// Run CFG analyses (reachability and explicit return) after semantic analysis.
 	semantics.AnalyzeCFG(moduleCtx.compilerCtx, pkgNode, cfg)
+	if compilerCtx.HasDiagnostics() {
+		return
+	}
 
 	// Desugar package "lowering" AST to an AST that BIR gen can handle.
 	moduleCtx.bLangPkg = desugar.DesugarPackage(moduleCtx.compilerCtx, moduleCtx.bLangPkg, moduleCtx.importedSymbols)
@@ -384,6 +398,22 @@ func buildBLangPackage(cx *context.CompilerContext, syntaxTrees []*tree.SyntaxTr
 		}
 	}
 	return pkg
+}
+
+// createModelPackageID builds a model.PackageID from the module descriptor so BIR gen
+// produces module-qualified function lookup keys that match cross-module call sites.
+func createModelPackageID(compilerCtx *context.CompilerContext, desc ModuleDescriptor) *model.PackageID {
+	orgName := model.Name(desc.Org().Value())
+	moduleName := desc.Name().String()
+	nameComps := make([]model.Name, 0)
+	for _, part := range strings.Split(moduleName, ".") {
+		nameComps = append(nameComps, model.Name(part))
+	}
+	version := model.Name(desc.Version().String())
+	if version == "" {
+		version = model.DEFAULT_VERSION
+	}
+	return compilerCtx.NewPackageID(orgName, nameComps, version)
 }
 
 // generateCodeInternal generates BIR for this module from the compiled BLangPackage.

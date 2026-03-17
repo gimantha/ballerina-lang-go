@@ -176,12 +176,16 @@ func (space *SymbolSpace) AddSymbol(name string, symbol Symbol) {
 	if _, ok := symbol.(*SymbolRef); ok {
 		panic("SymbolRef cannot be added to a SymbolSpace")
 	}
+	space.mu.Lock()
 	space.lookupTable[name] = len(space.Symbols)
 	space.Symbols = append(space.Symbols, symbol)
+	space.mu.Unlock()
 }
 
 func (space *SymbolSpace) GetSymbol(name string) (SymbolRef, bool) {
+	space.mu.RLock()
 	index, ok := space.lookupTable[name]
+	space.mu.RUnlock()
 	if !ok {
 		return SymbolRef{}, false
 	}
@@ -205,11 +209,11 @@ func (space *SymbolSpace) SymbolAt(index int) Symbol {
 	return space.Symbols[index]
 }
 
-func NewSymbolSpaceInner(packageId PackageID, index int) *SymbolSpace {
+func NewSymbolSpaceInner(packageID PackageID, index int) *SymbolSpace {
 	pkg := PackageIdentifier{
-		Organization: packageId.OrgName.Value(),
-		Package:      packageId.PkgName.Value(),
-		Version:      packageId.Version.Value(),
+		Organization: packageID.OrgName.Value(),
+		Package:      packageID.PkgName.Value(),
+		Version:      packageID.Version.Value(),
 	}
 	return &SymbolSpace{index: index, pkg: pkg, lookupTable: make(map[string]int), Symbols: make([]Symbol, 0)}
 }

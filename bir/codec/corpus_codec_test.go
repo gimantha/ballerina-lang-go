@@ -26,6 +26,7 @@ import (
 	debugcommon "ballerina-lang-go/common"
 	"ballerina-lang-go/context"
 	"ballerina-lang-go/desugar"
+	"ballerina-lang-go/model"
 	"ballerina-lang-go/parser"
 	"ballerina-lang-go/semantics"
 	"ballerina-lang-go/semtypes"
@@ -138,12 +139,11 @@ func testBIRSerialization(t *testing.T, testPair test_util.TestCase) {
 	pkg := ast.ToPackage(compilationUnit)
 
 	// Step 4: Resolve symbols
-	importedSymbols := semantics.ResolveImports(cx, pkg, semantics.GetImplicitImports(cx))
+	importedSymbols := semantics.ResolveImports(cx, pkg, semantics.GetImplicitImports(cx), make(map[semantics.PackageIdentifier]model.ExportedSymbolSpace), "")
 	semantics.ResolveSymbols(cx, pkg, importedSymbols)
 
 	// Step 5: Resolve types
-	typeResolver := semantics.NewTypeResolver(cx, importedSymbols)
-	typeResolver.ResolveTypes(cx, pkg)
+	semantics.ResolveTopLevelNodes(cx, pkg, importedSymbols)
 
 	// Step 6: Generate control flow graph
 	cfg := semantics.CreateControlFlowGraph(cx, pkg)

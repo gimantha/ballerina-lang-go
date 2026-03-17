@@ -20,15 +20,17 @@ import (
 	"ballerina-lang-go/model"
 	"ballerina-lang-go/semtypes"
 	"ballerina-lang-go/tools/diagnostics"
+	"sync"
 )
 
 type CompilerContext struct {
 	env         *CompilerEnvironment
+	mu          sync.Mutex
 	diagnostics []diagnostics.Diagnostic
 }
 
-func (this *CompilerContext) NewSymbolSpace(packageId model.PackageID) *model.SymbolSpace {
-	return this.env.NewSymbolSpace(packageId)
+func (this *CompilerContext) NewSymbolSpace(packageID model.PackageID) *model.SymbolSpace {
+	return this.env.NewSymbolSpace(packageID)
 }
 
 func (this *CompilerContext) NewFunctionScope(parent model.Scope, pkg model.PackageID) *model.FunctionScope {
@@ -73,6 +75,14 @@ func (this *CompilerContext) SetSymbolType(symbol model.SymbolRef, ty semtypes.S
 	this.GetSymbol(symbol).SetType(ty)
 }
 
+func (this *CompilerContext) SetTypeDefinition(symbol model.SymbolRef, defn model.TypeDefinition) {
+	this.env.SetTypeDefinition(symbol, defn)
+}
+
+func (this *CompilerContext) GetTypeDefinition(symbol model.SymbolRef) (model.TypeDefinition, bool) {
+	return this.env.GetTypeDefinition(symbol)
+}
+
 func (this *CompilerContext) GetDefaultPackage() *model.PackageID {
 	return this.env.GetDefaultPackage()
 }
@@ -99,7 +109,9 @@ func (this *CompilerContext) SemanticError(message string, pos diagnostics.Locat
 
 func (this *CompilerContext) addDiagnostic(code string, severity diagnostics.DiagnosticSeverity, message string, pos diagnostics.Location) {
 	diagnostic := diagnostics.CreateDiagnostic(diagnostics.NewDiagnosticInfo(&code, message, severity), pos)
+	this.mu.Lock()
 	this.diagnostics = append(this.diagnostics, diagnostic)
+	this.mu.Unlock()
 }
 
 func (this *CompilerContext) HasDiagnostics() bool {

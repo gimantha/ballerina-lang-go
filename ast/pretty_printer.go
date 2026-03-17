@@ -140,6 +140,22 @@ func (p *PrettyPrinter) PrintInner(node BLangNode) {
 		p.printLimitClause(t)
 	case *BLangSelectClause:
 		p.printSelectClause(t)
+	case *BLangCheckedExpr:
+		p.printCheckedExpr(t)
+	case *BLangCheckPanickedExpr:
+		p.printCheckPanickedExpr(t)
+	case *BLangTrapExpr:
+		p.printTrapExpr(t)
+	case *BLangPanic:
+		p.printPanic(t)
+	case *BLangMatchStatement:
+		p.printMatchStatement(t)
+	case *BLangConstPattern:
+		p.printConstPattern(t)
+	case *BLangWildCardMatchPattern:
+		p.printWildCardMatchPattern(t)
+	case *BLangMatchClause:
+		p.printMatchClause(t)
 	default:
 		fmt.Println(p.buffer.String())
 		panic("Unsupported node type: " + reflect.TypeOf(t).String())
@@ -384,6 +400,15 @@ func (p *PrettyPrinter) printReturn(node *BLangReturn) {
 		p.PrintInner(node.Expr.(BLangNode))
 		p.indentLevel--
 	}
+	p.endNode()
+}
+
+func (p *PrettyPrinter) printPanic(node *BLangPanic) {
+	p.startNode()
+	p.printString("panic")
+	p.indentLevel++
+	p.PrintInner(node.Expr.(BLangNode))
+	p.indentLevel--
 	p.endNode()
 }
 
@@ -955,6 +980,35 @@ func (p *PrettyPrinter) printErrorConstructorExpr(node *BLangErrorConstructorExp
 	p.endNode()
 }
 
+// Checked expression printer
+func (p *PrettyPrinter) printCheckedExpr(node *BLangCheckedExpr) {
+	p.startNode()
+	p.printString("checked-expr")
+	p.indentLevel++
+	p.PrintInner(node.Expr.(BLangNode))
+	p.indentLevel--
+	p.endNode()
+}
+
+// Check panicked expression printer
+func (p *PrettyPrinter) printCheckPanickedExpr(node *BLangCheckPanickedExpr) {
+	p.startNode()
+	p.printString("check-panicked-expr")
+	p.indentLevel++
+	p.PrintInner(node.Expr.(BLangNode))
+	p.indentLevel--
+	p.endNode()
+}
+
+func (p *PrettyPrinter) printTrapExpr(node *BLangTrapExpr) {
+	p.startNode()
+	p.printString("trap-expr")
+	p.indentLevel++
+	p.PrintInner(node.Expr.(BLangNode))
+	p.indentLevel--
+	p.endNode()
+}
+
 // User-defined type printer
 func (p *PrettyPrinter) printUserDefinedType(node *BLangUserDefinedType) {
 	p.startNode()
@@ -964,5 +1018,56 @@ func (p *PrettyPrinter) printUserDefinedType(node *BLangUserDefinedType) {
 	} else {
 		p.printString(node.TypeName.Value)
 	}
+	p.endNode()
+}
+
+// Match statement printer
+func (p *PrettyPrinter) printMatchStatement(node *BLangMatchStatement) {
+	p.startNode()
+	p.printString("match")
+	p.indentLevel++
+	p.PrintInner(node.Expr.(BLangNode))
+	for i := range node.MatchClauses {
+		clause := &node.MatchClauses[i]
+		p.printMatchClause(clause)
+	}
+	p.indentLevel--
+	p.endNode()
+}
+
+func (p *PrettyPrinter) printMatchClause(node *BLangMatchClause) {
+	p.startNode()
+	p.printString("match-clause")
+	p.indentLevel++
+	// Print patterns
+	for _, pattern := range node.Patterns {
+		p.PrintInner(pattern.(BLangNode))
+	}
+	// Print guard if present
+	if node.Guard != nil {
+		p.startNode()
+		p.printString("match-guard")
+		p.indentLevel++
+		p.PrintInner(node.Guard.(BLangNode))
+		p.indentLevel--
+		p.endNode()
+	}
+	p.PrintInner(&node.Body)
+	p.indentLevel--
+	p.endNode()
+}
+
+func (p *PrettyPrinter) printConstPattern(node *BLangConstPattern) {
+	p.startNode()
+	p.printString("const-pattern")
+	p.indentLevel++
+	p.PrintInner(node.Expr.(BLangNode))
+	p.indentLevel--
+	p.endNode()
+}
+
+func (p *PrettyPrinter) printWildCardMatchPattern(node *BLangWildCardMatchPattern) {
+	p.startNode()
+	p.printString("wildcard-match-pattern")
 	p.endNode()
 }

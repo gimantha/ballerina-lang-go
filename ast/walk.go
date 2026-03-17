@@ -278,6 +278,9 @@ func Walk(v Visitor, node BLangNode) {
 			Walk(v, node.Expr.(BLangNode))
 		}
 
+	case *BLangExternFunctionBody:
+		// Leaf node - no children to walk
+
 	// Section 4: Statements
 	case *BLangBlockStmt:
 		for _, stmt := range node.Stmts {
@@ -337,10 +340,32 @@ func Walk(v Visitor, node BLangNode) {
 		Walk(v, &node.Body)
 		Walk(v, &node.OnFailClause)
 
+	case *BLangMatchStatement:
+		if node.Expr != nil {
+			Walk(v, node.Expr.(BLangNode))
+		}
+		for i := range node.MatchClauses {
+			Walk(v, &node.MatchClauses[i])
+		}
+
+	case *BLangMatchClause:
+		for _, pattern := range node.Patterns {
+			Walk(v, pattern.(BLangNode))
+		}
+		if node.Guard != nil {
+			Walk(v, node.Guard.(BLangNode))
+		}
+		Walk(v, &node.Body)
+
 	case *BLangSimpleVariableDef:
 		Walk(v, node.Var)
 
 	case *BLangReturn:
+		if node.Expr != nil {
+			Walk(v, node.Expr.(BLangNode))
+		}
+
+	case *BLangPanic:
 		if node.Expr != nil {
 			Walk(v, node.Expr.(BLangNode))
 		}
@@ -392,6 +417,11 @@ func Walk(v Visitor, node BLangNode) {
 		}
 
 	case *BLangCheckPanickedExpr:
+		if node.Expr != nil {
+			Walk(v, node.Expr.(BLangNode))
+		}
+
+	case *BLangTrapExpr:
 		if node.Expr != nil {
 			Walk(v, node.Expr.(BLangNode))
 		}
@@ -754,6 +784,9 @@ func Walk(v Visitor, node BLangNode) {
 		if node.Expr != nil {
 			Walk(v, node.Expr.(BLangNode))
 		}
+
+	case *BLangWildCardMatchPattern:
+		// Leaf node
 
 	// Section 13: Misc Leaf
 	case *BLangIdentifier:

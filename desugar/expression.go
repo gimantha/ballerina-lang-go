@@ -51,6 +51,8 @@ func walkExpression(cx *FunctionContext, node model.ExpressionNode) desugaredNod
 		return walkCheckedExpr(cx, expr)
 	case *ast.BLangCheckPanickedExpr:
 		return walkCheckPanickedExpr(cx, expr)
+	case *ast.BLangTrapExpr:
+		return walkTrapExpr(cx, expr)
 	case *ast.BLangDynamicArgExpr:
 		return walkDynamicArgExpr(cx, expr)
 	case *ast.BLangLambdaFunction:
@@ -269,32 +271,86 @@ func walkErrorConstructorExpr(cx *FunctionContext, expr *ast.BLangErrorConstruct
 }
 
 func walkCheckedExpr(cx *FunctionContext, expr *ast.BLangCheckedExpr) desugaredNode[model.ExpressionNode] {
-	var initStmts []model.StatementNode
-
-	if expr.Expr != nil {
-		result := walkExpression(cx, expr.Expr)
-		initStmts = append(initStmts, result.initStmts...)
-		expr.Expr = result.replacementNode.(ast.BLangExpression)
-	}
-
-	return desugaredNode[model.ExpressionNode]{
-		initStmts:       initStmts,
-		replacementNode: expr,
-	}
+	return desugarCheckedExpr(cx, expr, false)
 }
 
 func walkCheckPanickedExpr(cx *FunctionContext, expr *ast.BLangCheckPanickedExpr) desugaredNode[model.ExpressionNode] {
+	return desugarCheckedExpr(cx, &expr.BLangCheckedExpr, true)
+}
+
+func walkTrapExpr(cx *FunctionContext, expr *ast.BLangTrapExpr) desugaredNode[model.ExpressionNode] {
+	result := walkExpression(cx, expr.Expr)
+	if len(result.initStmts) > 0 {
+		// I don't think this can ever happen but if it does we need to think about how to add these statements in to the
+		// trap region in BIR gen
+		cx.internalError("Init statements will be hoisted outside of trap region")
+	}
+	expr.Expr = result.replacementNode.(ast.BLangExpression)
+	return desugaredNode[model.ExpressionNode]{initStmts: nil, replacementNode: expr}
+}
+
+func desugarCheckedExpr(cx *FunctionContext, expr *ast.BLangCheckedExpr, isPanic bool) desugaredNode[model.ExpressionNode] {
 	var initStmts []model.StatementNode
 
+	// Walk the inner expression first
 	if expr.Expr != nil {
 		result := walkExpression(cx, expr.Expr)
 		initStmts = append(initStmts, result.initStmts...)
 		expr.Expr = result.replacementNode.(ast.BLangExpression)
 	}
 
+	innerTy := expr.Expr.GetDeterminedType()
+	resultTy := expr.GetDeterminedType()
+
+	// TODO: extract util to add definition and get reference
+	// Create temp var: $desugar$N = <inner expr>
+	tempName, tempSymbol := cx.addDesugardSymbol(innerTy, model.SymbolKindVariable, false)
+	tempVarName := &ast.BLangIdentifier{Value: tempName}
+	tempVar := &ast.BLangSimpleVariable{Name: tempVarName}
+	tempVar.SetDeterminedType(innerTy)
+	tempVar.SetInitialExpression(expr.Expr)
+	tempVar.SetSymbol(tempSymbol)
+	tempVarDef := &ast.BLangSimpleVariableDef{Var: tempVar}
+	initStmts = append(initStmts, tempVarDef)
+
+	// Type test: $desugar$N is error
+	tempVarRefForTest := &ast.BLangSimpleVarRef{VariableName: tempVarName}
+	tempVarRefForTest.SetSymbol(tempSymbol)
+	tempVarRefForTest.SetDeterminedType(innerTy)
+
+	typeTestExpr := &ast.BLangTypeTestExpr{}
+	typeTestExpr.Expr = tempVarRefForTest
+	typeTestExpr.Type = model.TypeData{Type: &semtypes.ERROR}
+	typeTestExpr.SetDeterminedType(&semtypes.BOOLEAN)
+
+	// If body: return or panic
+	tempVarRefForBody := &ast.BLangSimpleVarRef{VariableName: tempVarName}
+	tempVarRefForBody.SetSymbol(tempSymbol)
+	tempVarRefForBody.SetDeterminedType(innerTy)
+
+	var bodyStmt ast.BLangStatement
+	if isPanic {
+		bodyStmt = &ast.BLangPanic{Expr: tempVarRefForBody}
+	} else {
+		bodyStmt = &ast.BLangReturn{Expr: tempVarRefForBody}
+	}
+
+	ifStmt := &ast.BLangIf{
+		Expr: typeTestExpr,
+		Body: ast.BLangBlockStmt{
+			Stmts: []ast.BLangStatement{bodyStmt},
+		},
+	}
+	initStmts = append(initStmts, ifStmt)
+
+	// Replacement: var ref typed as non-error type
+	replacementVarRef := &ast.BLangSimpleVarRef{VariableName: tempVarName}
+	replacementVarRef.SetSymbol(tempSymbol)
+	replacementVarRef.SetDeterminedType(resultTy)
+
 	return desugaredNode[model.ExpressionNode]{
 		initStmts:       initStmts,
-		replacementNode: expr,
+		replacementNode: replacementVarRef,
 	}
 }
 
@@ -430,11 +486,6 @@ func walkMappingConstructorExpr(cx *FunctionContext, expr *ast.BLangMappingConst
 }
 
 func walkQueryExpr(cx *FunctionContext, expr *ast.BLangQueryExpr) desugaredNode[model.ExpressionNode] {
-	if len(expr.QueryClauseList) < 2 {
-		cx.unimplemented("query expression currently supports only from + let + where + limit + select clauses")
-		return desugaredNode[model.ExpressionNode]{replacementNode: expr}
-	}
-
 	fromClause, ok := expr.QueryClauseList[0].(*ast.BLangFromClause)
 	if !ok {
 		cx.internalError("query expression must start with from clause")
@@ -448,6 +499,11 @@ func walkQueryExpr(cx *FunctionContext, expr *ast.BLangQueryExpr) desugaredNode[
 	loopVarDef, ok := fromClause.VariableDefinitionNode.(*ast.BLangSimpleVariableDef)
 	if !ok {
 		cx.unimplemented("query from clause currently supports only simple variable definition")
+		return desugaredNode[model.ExpressionNode]{replacementNode: expr}
+	}
+	cloneLoopVarDef := cloneSimpleVariableDef(loopVarDef)
+	if cloneLoopVarDef == nil || cloneLoopVarDef.Var == nil {
+		cx.internalError("failed to clone query from-clause variable definition")
 		return desugaredNode[model.ExpressionNode]{replacementNode: expr}
 	}
 
@@ -550,21 +606,82 @@ func walkQueryExpr(cx *FunctionContext, expr *ast.BLangQueryExpr) desugaredNode[
 		IndexExpr: idxRef,
 	}
 	elementAccess.Expr = collRef
-	loopVarTy := loopVarDef.Var.GetDeterminedType()
+	loopVarSymbol := cloneLoopVarDef.Var.Symbol()
+	loopVarTy := cx.symbolType(loopVarSymbol)
+	if loopVarTy == nil {
+		cx.internalError("query from-clause variable symbol type not found")
+		return desugaredNode[model.ExpressionNode]{replacementNode: expr}
+	}
 	elementAccess.SetDeterminedType(loopVarTy)
-	loopVarDef.Var.SetInitialExpression(elementAccess)
+	cloneLoopVarDef.Var.SetInitialExpression(elementAccess)
 
-	bodyStmts := make([]ast.BLangStatement, 0, 8)
-	bodyStmts = append(bodyStmts, loopVarDef)
+	var bodyStmts []ast.BLangStatement
+	bodyStmts = append(bodyStmts, cloneLoopVarDef)
 
-	for i := 1; i < len(expr.QueryClauseList)-1; i++ {
-		switch clause := expr.QueryClauseList[i].(type) {
+	bodyStmts, ok = appendQueryIntermediateClauseStmts(cx, expr, idxRef, &initStmts, bodyStmts)
+	if !ok {
+		return desugaredNode[model.ExpressionNode]{replacementNode: expr}
+	}
+
+	selectResult := walkExpression(cx, selectClause.Expression)
+	for _, s := range selectResult.initStmts {
+		bodyStmts = append(bodyStmts, s.(ast.BLangStatement))
+	}
+	pushInvocation := createPushInvocation(cx, resultRef, selectResult.replacementNode.(ast.BLangExpression))
+	if pushInvocation == nil {
+		return desugaredNode[model.ExpressionNode]{replacementNode: expr}
+	}
+	bodyStmts = append(bodyStmts, &ast.BLangExpressionStmt{Expr: pushInvocation})
+	bodyStmts = append(bodyStmts, createIncrementStmt(idxRef))
+
+	whileStmt := &ast.BLangWhile{
+		Expr: condition,
+		Body: ast.BLangBlockStmt{
+			Stmts: bodyStmts,
+		},
+	}
+	whileStmt.SetScope(cx.currentScope())
+	whileStmt.SetDeterminedType(&semtypes.NEVER)
+	initStmts = append(initStmts, whileStmt)
+
+	return desugaredNode[model.ExpressionNode]{
+		initStmts:       initStmts,
+		replacementNode: resultRef,
+	}
+}
+
+func cloneSimpleVariableDef(varDef *ast.BLangSimpleVariableDef) *ast.BLangSimpleVariableDef {
+	if varDef == nil {
+		return nil
+	}
+	clone := *varDef
+	if varDef.Var == nil {
+		return &clone
+	}
+	cloneVar := *varDef.Var
+	if varDef.Var.Name != nil {
+		cloneName := *varDef.Var.Name
+		cloneVar.Name = &cloneName
+	}
+	clone.Var = &cloneVar
+	return &clone
+}
+
+func appendQueryIntermediateClauseStmts(
+	cx *FunctionContext,
+	queryExpr *ast.BLangQueryExpr,
+	idxRef ast.BLangExpression,
+	initStmts *[]model.StatementNode,
+	bodyStmts []ast.BLangStatement,
+) ([]ast.BLangStatement, bool) {
+	for i := 1; i < len(queryExpr.QueryClauseList)-1; i++ {
+		switch clause := queryExpr.QueryClauseList[i].(type) {
 		case *ast.BLangLetClause:
 			for _, variableDef := range clause.LetVarDeclarations {
 				varDef, ok := variableDef.(*ast.BLangSimpleVariableDef)
 				if !ok || varDef.Var == nil || varDef.Var.Expr == nil {
 					cx.unimplemented("query let clause currently supports only initialized simple variable declarations")
-					return desugaredNode[model.ExpressionNode]{replacementNode: expr}
+					return nil, false
 				}
 				letResult := walkExpression(cx, varDef.Var.Expr.(ast.BLangExpression))
 				for _, s := range letResult.initStmts {
@@ -576,7 +693,7 @@ func walkQueryExpr(cx *FunctionContext, expr *ast.BLangQueryExpr) desugaredNode[
 		case *ast.BLangWhereClause:
 			if clause.Expression == nil {
 				cx.unimplemented("query where clause requires a condition expression")
-				return desugaredNode[model.ExpressionNode]{replacementNode: expr}
+				return nil, false
 			}
 			whereResult := walkExpression(cx, clause.Expression)
 			for _, s := range whereResult.initStmts {
@@ -606,7 +723,7 @@ func walkQueryExpr(cx *FunctionContext, expr *ast.BLangQueryExpr) desugaredNode[
 		case *ast.BLangLimitClause:
 			if clause.Expression == nil {
 				cx.unimplemented("query limit clause requires an expression")
-				return desugaredNode[model.ExpressionNode]{replacementNode: expr}
+				return nil, false
 			}
 
 			zeroForCount := &ast.BLangNumericLiteral{
@@ -625,7 +742,7 @@ func walkQueryExpr(cx *FunctionContext, expr *ast.BLangQueryExpr) desugaredNode[
 			limitCountVar.SetDeterminedType(&semtypes.INT)
 			limitCountVar.SetInitialExpression(zeroForCount)
 			limitCountVar.SetSymbol(limitCountSymbol)
-			initStmts = append(initStmts, &ast.BLangSimpleVariableDef{Var: limitCountVar})
+			*initStmts = append(*initStmts, &ast.BLangSimpleVariableDef{Var: limitCountVar})
 
 			limitCountRef := &ast.BLangSimpleVarRef{
 				VariableName: limitCountVar.Name,
@@ -676,35 +793,10 @@ func walkQueryExpr(cx *FunctionContext, expr *ast.BLangQueryExpr) desugaredNode[
 			bodyStmts = append(bodyStmts, createIncrementStmt(limitCountRef))
 		default:
 			cx.unimplemented("query expression currently supports only let + where + limit clauses as intermediate clauses")
-			return desugaredNode[model.ExpressionNode]{replacementNode: expr}
+			return nil, false
 		}
 	}
-
-	selectResult := walkExpression(cx, selectClause.Expression)
-	for _, s := range selectResult.initStmts {
-		bodyStmts = append(bodyStmts, s.(ast.BLangStatement))
-	}
-	pushInvocation := createPushInvocation(cx, resultRef, selectResult.replacementNode.(ast.BLangExpression))
-	if pushInvocation == nil {
-		return desugaredNode[model.ExpressionNode]{replacementNode: expr}
-	}
-	bodyStmts = append(bodyStmts, &ast.BLangExpressionStmt{Expr: pushInvocation})
-	bodyStmts = append(bodyStmts, createIncrementStmt(idxRef))
-
-	whileStmt := &ast.BLangWhile{
-		Expr: condition,
-		Body: ast.BLangBlockStmt{
-			Stmts: bodyStmts,
-		},
-	}
-	whileStmt.SetScope(cx.currentScope())
-	whileStmt.SetDeterminedType(&semtypes.NEVER)
-	initStmts = append(initStmts, whileStmt)
-
-	return desugaredNode[model.ExpressionNode]{
-		initStmts:       initStmts,
-		replacementNode: resultRef,
-	}
+	return bodyStmts, true
 }
 
 func createPushInvocation(cx *FunctionContext, listExpr ast.BLangExpression, valueExpr ast.BLangExpression) *ast.BLangInvocation {

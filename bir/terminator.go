@@ -19,6 +19,7 @@ package bir
 import (
 	"ballerina-lang-go/common"
 	"ballerina-lang-go/model"
+	"ballerina-lang-go/tools/diagnostics"
 	"ballerina-lang-go/values"
 )
 
@@ -57,6 +58,11 @@ type (
 		TrueBB  *BIRBasicBlock
 		FalseBB *BIRBasicBlock
 	}
+
+	Panic struct {
+		BIRTerminatorBase
+		ErrorOp *BIROperand
+	}
 )
 
 var (
@@ -64,10 +70,36 @@ var (
 	_ BIRAssignInstruction = &Call{}
 	_ BIRTerminator        = &Return{}
 	_ BIRTerminator        = &Branch{}
+	_ BIRTerminator        = &Panic{}
 )
 
 func (g *Goto) GetKind() InstructionKind {
 	return INSTRUCTION_KIND_GOTO
+}
+
+func NewReturn(pos diagnostics.Location) *Return {
+	return &Return{
+		BIRTerminatorBase: BIRTerminatorBase{
+			BIRInstructionBase: BIRInstructionBase{
+				BIRNodeBase: BIRNodeBase{
+					Pos: pos,
+				},
+			},
+		},
+	}
+}
+
+func NewGoto(thenBB *BIRBasicBlock, pos diagnostics.Location) *Goto {
+	return &Goto{
+		BIRTerminatorBase: BIRTerminatorBase{
+			BIRInstructionBase: BIRInstructionBase{
+				BIRNodeBase: BIRNodeBase{
+					Pos: pos,
+				},
+			},
+			ThenBB: thenBB,
+		},
+	}
 }
 
 func (c *Call) GetKind() InstructionKind {
@@ -78,10 +110,60 @@ func (c *Call) GetLhsOperand() *BIROperand {
 	return c.LhsOp
 }
 
+func NewCall(kind InstructionKind, args []BIROperand, name model.Name, thenBB *BIRBasicBlock, lhsOp *BIROperand, pos diagnostics.Location) *Call {
+	return &Call{
+		BIRTerminatorBase: BIRTerminatorBase{
+			BIRInstructionBase: BIRInstructionBase{
+				BIRNodeBase: BIRNodeBase{
+					Pos: pos,
+				},
+				LhsOp: lhsOp,
+			},
+			ThenBB: thenBB,
+		},
+		Kind: kind,
+		Args: args,
+		Name: name,
+	}
+}
+
 func (r *Return) GetKind() InstructionKind {
 	return INSTRUCTION_KIND_RETURN
 }
 
 func (b *Branch) GetKind() InstructionKind {
 	return INSTRUCTION_KIND_BRANCH
+}
+
+func (p *Panic) GetKind() InstructionKind {
+	return INSTRUCTION_KIND_PANIC
+}
+
+func NewPanic(errorOp *BIROperand, pos diagnostics.Location) *Panic {
+	return &Panic{
+		BIRTerminatorBase: BIRTerminatorBase{
+			BIRInstructionBase: BIRInstructionBase{
+				BIRNodeBase: BIRNodeBase{
+					Pos: pos,
+				},
+			},
+		},
+		ErrorOp: errorOp,
+	}
+}
+
+func NewBranch(op *BIROperand, trueBB, falseBB *BIRBasicBlock, pos diagnostics.Location) *Branch {
+	return &Branch{
+		BIRTerminatorBase: BIRTerminatorBase{
+			BIRInstructionBase: BIRInstructionBase{
+				BIRNodeBase: BIRNodeBase{
+					Pos: pos,
+				},
+			},
+			ThenBB: trueBB,
+		},
+		Op:      op,
+		TrueBB:  trueBB,
+		FalseBB: falseBB,
+	}
 }

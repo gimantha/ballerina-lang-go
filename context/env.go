@@ -17,11 +17,10 @@
 package context
 
 import (
-	"strconv"
-	"sync"
-
 	"ballerina-lang-go/model"
 	"ballerina-lang-go/semtypes"
+	"strconv"
+	"sync"
 )
 
 type CompilerEnvironment struct {
@@ -30,10 +29,11 @@ type CompilerEnvironment struct {
 	symbolSpaces     []*model.SymbolSpace
 	typeEnv          semtypes.Env
 	underlyingSymbol sync.Map
+	typeDefns        map[model.SymbolRef]model.TypeDefinition
 }
 
-func (this *CompilerEnvironment) NewSymbolSpace(packageId model.PackageID) *model.SymbolSpace {
-	space := model.NewSymbolSpaceInner(packageId, len(this.symbolSpaces))
+func (this *CompilerEnvironment) NewSymbolSpace(packageID model.PackageID) *model.SymbolSpace {
+	space := model.NewSymbolSpaceInner(packageID, len(this.symbolSpaces))
 	this.symbolSpaces = append(this.symbolSpaces, space)
 	return space
 }
@@ -58,7 +58,7 @@ func (this *CompilerEnvironment) NewBlockScope(parent model.Scope, pkg model.Pac
 
 func (this *CompilerEnvironment) GetSymbol(symbol model.SymbolRef) model.Symbol {
 	symbolSpace := this.symbolSpaces[symbol.SpaceIndex]
-	return symbolSpace.Symbols[symbol.Index]
+	return symbolSpace.SymbolAt(symbol.Index)
 }
 
 // CreateNarrowedSymbol create a narrowed symbol for the given baseRef symbol. IMPORTANT: baseRef must be the actual symbol
@@ -111,11 +111,21 @@ func (this *CompilerEnvironment) NewPackageID(orgName model.Name, nameComps []mo
 	return model.NewPackageID(this.packageInterner, orgName, nameComps, version)
 }
 
+func (this *CompilerEnvironment) SetTypeDefinition(symbol model.SymbolRef, defn model.TypeDefinition) {
+	this.typeDefns[symbol] = defn
+}
+
+func (this *CompilerEnvironment) GetTypeDefinition(symbol model.SymbolRef) (model.TypeDefinition, bool) {
+	defn, ok := this.typeDefns[symbol]
+	return defn, ok
+}
+
 func NewCompilerEnvironment(typeEnv semtypes.Env) *CompilerEnvironment {
 	return &CompilerEnvironment{
 		anonTypeCount:   make(map[*model.PackageID]int),
 		packageInterner: model.DefaultPackageIDInterner,
 		typeEnv:         typeEnv,
+		typeDefns:       make(map[model.SymbolRef]model.TypeDefinition),
 	}
 }
 

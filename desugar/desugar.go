@@ -18,13 +18,14 @@
 package desugar
 
 import (
+	"fmt"
+	"sync"
+
 	"ballerina-lang-go/ast"
 	"ballerina-lang-go/context"
 	"ballerina-lang-go/desugar/internal/dcontext"
 	"ballerina-lang-go/model"
 	"ballerina-lang-go/semtypes"
-	"fmt"
-	"sync"
 )
 
 type desugaredNode[E model.Node] struct {
@@ -53,6 +54,10 @@ func (ctx *FunctionContext) getImportedSymbolSpace(pkgName string) (model.Export
 
 func (ctx *FunctionContext) addImplicitImport(pkgName string, imp ast.BLangImportPackage) {
 	ctx.pkgCtx.AddImplicitImport(pkgName, imp)
+}
+
+func (ctx *FunctionContext) symbolType(symbol model.SymbolRef) semtypes.SemType {
+	return ctx.pkgCtx.SymbolType(symbol)
 }
 
 func (ctx *FunctionContext) pushScope(scope model.Scope) {
@@ -236,6 +241,8 @@ func desugarFunction(pkgCtx *dcontext.PackageContext, fn *ast.BLangFunction) *as
 				body.Expr = result.replacementNode.(ast.BLangExpression)
 			}
 		}
+	case *ast.BLangExternFunctionBody:
+		// Nothing to desugar
 	}
 
 	return fn
@@ -254,13 +261,10 @@ func convertExprBodyToBlockBody(
 
 	// Build block with init statements + return
 	stmts := make([]ast.BLangStatement, 0, len(result.initStmts)+1)
-	for _, initStmt := range result.initStmts {
-		stmts = append(stmts, initStmt.(ast.BLangStatement))
-	}
+	stmts = append(stmts, result.initStmts...)
 	stmts = append(stmts, returnStmt)
 
 	return &ast.BLangBlockFunctionBody{
-		BLangFunctionBodyBase: exprBody.BLangFunctionBodyBase,
-		Stmts:                 stmts,
+		Stmts: stmts,
 	}
 }

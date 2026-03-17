@@ -76,27 +76,36 @@ func (p *PrettyPrinter) Print(node BIRPackage) string {
 
 func (p *PrettyPrinter) PrintFunction(function BIRFunction) {
 	p.write(function.Name.Value())
-	ty := function.Type
-	if ty != nil {
-		p.write("(")
-		for i, param := range ty.GetParameterTypes() {
-			if i > 0 {
+	p.write("(")
+	first := true
+	for _, v := range function.LocalVars {
+		if v.Kind == VAR_KIND_ARG {
+			if !first {
 				p.write(",")
 			}
-			p.write(p.PrintType(param))
+			p.write(p.PrintSemType(v.Type))
+			first = false
 		}
-		p.write(")")
-		if ty.GetReturnType() != nil {
-			p.write(" -> ")
-			p.write(p.PrintType(ty.GetReturnType()))
-		}
-	} else {
-		p.write("<NIL>")
+	}
+	p.write(")")
+	if function.ReturnVariable != nil && function.ReturnVariable.Type != nil {
+		p.write(" -> ")
+		p.write(p.PrintSemType(function.ReturnVariable.Type))
 	}
 	p.write("{\n")
 	p.increaseIndent()
 	for _, basicBlock := range function.BasicBlocks {
 		p.PrintBasicBlock(basicBlock)
+	}
+	if len(function.ErrorTable) > 0 {
+		p.writeLine("")
+		p.writeLine("error-table {")
+		p.increaseIndent()
+		for _, entry := range function.ErrorTable {
+			p.writeLine(fmt.Sprintf("[%s, %s] -> %s, %s", entry.Start.Id.Value(), entry.End.Id.Value(), entry.Target.Id.Value(), p.PrintOperand(*entry.ErrorOp)))
+		}
+		p.decreaseIndent()
+		p.writeLine("}")
 	}
 	p.decreaseIndent()
 	p.write("}")
@@ -145,6 +154,8 @@ func (p *PrettyPrinter) PrintInstruction(instruction BIRInstruction) string {
 		return p.PrintTypeCast(instruction.(*TypeCast))
 	case *TypeTest:
 		return p.PrintTypeTest(instruction.(*TypeTest))
+	case *Panic:
+		return p.PrintPanic(instruction.(*Panic))
 	default:
 		panic(fmt.Sprintf("unknown instruction type: %T", instruction))
 	}
@@ -215,6 +226,10 @@ func (p *PrettyPrinter) PrintFieldAccess(access *FieldAccess) string {
 
 func (p *PrettyPrinter) PrintReturn(r *Return) string {
 	return "return;"
+}
+
+func (p *PrettyPrinter) PrintPanic(pa *Panic) string {
+	return fmt.Sprintf("panic %s;", p.PrintOperand(*pa.ErrorOp))
 }
 
 func (p *PrettyPrinter) PrintBranch(b *Branch) string {

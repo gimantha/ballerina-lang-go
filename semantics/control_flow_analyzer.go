@@ -153,6 +153,8 @@ func (analyzer *functionControlFlowAnalyzer) analyzeFn(fn *ast.BLangFunction) fu
 		analyzer.analyzeBlockFunctionBody(fnBody)
 	case *ast.BLangExprFunctionBody:
 		analyzer.analyzeExprFunctionBody(fnBody)
+	case *ast.BLangExternFunctionBody:
+		// No body to analyze
 	}
 	return analyzer.getCfg()
 }
@@ -231,6 +233,8 @@ func (analyzer *functionControlFlowAnalyzer) analyzeStatement(curBB bbRef, stmt 
 	switch s := stmt.(type) {
 	case *ast.BLangReturn:
 		return analyzer.analyzeReturn(curBB, s)
+	case *ast.BLangPanic:
+		return analyzer.analyzePanic(curBB, s)
 	case *ast.BLangIf:
 		return analyzer.analyzeIf(curBB, s)
 	case *ast.BLangBlockStmt:
@@ -261,6 +265,8 @@ func (analyzer *functionControlFlowAnalyzer) analyzeStatement(curBB bbRef, stmt 
 	case *ast.BLangFunction:
 		analyzer.ctx.InternalError("nested functions not supported", stmt.GetPosition())
 		panic("unreachable")
+	case *ast.BLangMatchStatement:
+		return analyzer.analyzeMatch(curBB, s)
 	default:
 		// For unimplemented statement types, just add to current block and continue
 		analyzer.addNode(curBB, stmt)
@@ -299,6 +305,11 @@ func (c *ternaryExpressionChecker) VisitTypeData(typeData *model.TypeData) ast.V
 func (analyzer *functionControlFlowAnalyzer) analyzeReturn(curBB bbRef, stmt *ast.BLangReturn) stmtEffect {
 	analyzer.addNode(curBB, stmt)
 	// Return terminates execution - current block has no children
+	return terminatedEffect()
+}
+
+func (analyzer *functionControlFlowAnalyzer) analyzePanic(curBB bbRef, stmt *ast.BLangPanic) stmtEffect {
+	analyzer.addNode(curBB, stmt)
 	return terminatedEffect()
 }
 
@@ -380,6 +391,30 @@ func (analyzer *functionControlFlowAnalyzer) analyzeWhile(curBB bbRef, stmt *ast
 	return continueEffect(loopEnd)
 }
 
+func (analyzer *functionControlFlowAnalyzer) analyzeMatch(curBB bbRef, stmt *ast.BLangMatchStatement) stmtEffect {
+	analyzer.addNode(curBB, stmt.Expr)
+	finally := analyzer.createNewBB()
+	hasIncoming := false
+	for i := range stmt.MatchClauses {
+		clause := &stmt.MatchClauses[i]
+		clauseBB := analyzer.createNewBB()
+		analyzer.addEdge(curBB, clauseBB)
+		clauseEffect := analyzer.analyzeBlockStmt(clauseBB, &clause.Body)
+		if !clauseEffect.isTerminal() {
+			analyzer.addEdge(clauseEffect.nextBB, finally)
+			hasIncoming = true
+		}
+	}
+	if !stmt.IsExhaustive {
+		analyzer.addEdge(curBB, finally)
+		hasIncoming = true
+	}
+	if !hasIncoming {
+		return terminatedEffect()
+	}
+	return continueEffect(finally)
+}
+
 func (cfg *functionCFG) markBackedges() {
 	if len(cfg.bbs) == 0 {
 		return
@@ -417,6 +452,7 @@ func (cfg *functionCFG) markBackedges() {
 		}
 	}
 }
+
 func (analyzer *functionControlFlowAnalyzer) analyzeForeach(curBB bbRef, stmt *ast.BLangForeach) stmtEffect {
 	loopHead := analyzer.createNewBB()
 	loopBody := analyzer.createNewBB()
