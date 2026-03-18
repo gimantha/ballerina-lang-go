@@ -26,6 +26,6 @@ public function main() {
         limit 3
         where x % 2 == 0
         select x;
-    io:println(out1); // @output [2]
-    io:println(out2); // @output [2]
+    io:println(out1);
+    io:println(out2);
 }

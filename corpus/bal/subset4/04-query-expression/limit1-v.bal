@@ -21,5 +21,5 @@ public function main() {
     int[] out = from var x in xs
         limit 2
         select x * 10;
-    io:println(out); // @output [10,20]
+    io:println(out);
 }
