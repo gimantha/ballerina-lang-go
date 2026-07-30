@@ -4022,12 +4022,15 @@ func resolveQueryExpr(
 		return semtypes.SemType{}, expressionEffect{}, false
 	}
 
-	if _, ok := resolveQueryFromClause(t, chain, fromClause, false); !ok {
+	streamQuery := expr.QueryConstructType == ast.TypeKind_STREAM
+	fromCompletionErrorTy, ok := resolveQueryFromClause(t, chain, fromClause, streamQuery)
+	if !ok {
 		return semtypes.SemType{}, expressionEffect{}, false
 	}
 
+	intermediateCompletionErrorTy := semtypes.NEVER
 	queryChain, ok := resolveQueryIntermediateClausesWithCompletion(
-		t, chain, expr.QueryClauseList, lastClauseIndex, false, nil,
+		t, chain, expr.QueryClauseList, lastClauseIndex, streamQuery, &intermediateCompletionErrorTy,
 	)
 	if !ok {
 		return semtypes.SemType{}, expressionEffect{}, false
@@ -4061,6 +4064,14 @@ func resolveQueryExpr(
 			valueTy := semtypes.ListMemberTypeInnerVal(t.typeContext(), selectTy, semtypes.IntConst(1))
 			md := semtypes.NewMappingDefinition()
 			queryTy = md.DefineMappingTypeWrapped(t.typeEnv(), nil, valueTy)
+		case ast.TypeKind_STREAM:
+			completionTy := semtypes.Union(
+				semtypes.NIL,
+				semtypes.Union(fromCompletionErrorTy, intermediateCompletionErrorTy),
+			)
+			completionTy = semtypes.Union(completionTy, queryCheckedErrorType(expr))
+			sd := semtypes.NewStreamDefinition()
+			queryTy = sd.Define(t.typeEnv(), selectTy, completionTy)
 		default:
 			t.unimplemented("query construct type is not supported yet", expr.GetPosition())
 			return semtypes.SemType{}, expressionEffect{}, false
@@ -4111,6 +4122,37 @@ func resolveQueryExpr(
 	}
 	setExpectedType(expr, queryTy)
 	return queryTy, defaultExpressionEffect(chain), true
+}
+
+type queryCheckedErrorCollector struct {
+	errorTy semtypes.SemType
+}
+
+func (c *queryCheckedErrorCollector) Visit(node ast.BLangNode) ast.Visitor {
+	switch node := node.(type) {
+	case *ast.BLangCheckPanickedExpr:
+		return nil
+	case *ast.BLangCheckedExpr:
+		errorTy := semtypes.Intersect(node.Expr.GetDeterminedType(), semtypes.ERROR)
+		c.errorTy = semtypes.Union(c.errorTy, errorTy)
+	case *ast.BLangLambdaFunction, *ast.BLangQueryExpr, *ast.BLangQueryAction:
+		return nil
+	}
+	return c
+}
+
+func (c *queryCheckedErrorCollector) VisitTypeData(*ast.TypeData) ast.Visitor {
+	return nil
+}
+
+func queryCheckedErrorType(expr *ast.BLangQueryExpr) semtypes.SemType {
+	collector := &queryCheckedErrorCollector{
+		errorTy: semtypes.NEVER,
+	}
+	for _, clause := range expr.QueryClauseList {
+		ast.Walk(collector, clause)
+	}
+	return collector.errorTy
 }
 
 func resolveQueryAction(
@@ -4336,6 +4378,12 @@ func querySelectExpectedType(
 		return listQuerySelectExpectedType(ctx, expectedType)
 	case ast.TypeKind_MAP:
 		return mapQuerySelectExpectedTypeFromQueryExpectedType(ctx, env, expectedType)
+	case ast.TypeKind_STREAM:
+		streamTy := semtypes.Intersect(expectedType, semtypes.STREAM)
+		if semtypes.IsEmpty(ctx, streamTy) {
+			return semtypes.SemType{}
+		}
+		return semtypes.StreamValueType(ctx, streamTy)
 	default:
 		return semtypes.SemType{}
 	}

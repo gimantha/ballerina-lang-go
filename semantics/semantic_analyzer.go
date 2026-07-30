@@ -52,10 +52,11 @@ type (
 		compilerCtx *context.CompilerContext
 		typeCtx     semtypes.Context
 		// TODO: move the constant resolution to type resolver as well so that we can run semantic analyzer in parallel as well
-		pkg              *ast.BLangPackage
-		importedPkgs     map[string]*ast.BLangImportPackage
-		importedSymbols  map[string]model.ExportedSymbolSpace
-		moduleVarMetaMap map[model.SymbolRef]varDeclMetadata
+		pkg                  *ast.BLangPackage
+		importedPkgs         map[string]*ast.BLangImportPackage
+		importedSymbols      map[string]model.ExportedSymbolSpace
+		moduleVarMetaMap     map[model.SymbolRef]varDeclMetadata
+		queryCompletionTypes []semtypes.SemType
 	}
 	constantAnalyzer struct {
 		analyzerBase
@@ -75,7 +76,8 @@ type (
 		// hand an outer-function scope to the isolation check when validating
 		// closure expressions (record-field defaults, default-param exprs,
 		// nested isolated function bodies).
-		locals *localScope
+		locals               *localScope
+		queryCompletionTypes []semtypes.SemType
 	}
 
 	loopAnalyzer struct {
@@ -97,11 +99,60 @@ var (
 	_ analyzer = &lockAnalyzer{}
 )
 
-// expectedReturnType walks up the analyzer chain and returns the enclosing function's return type.
-// Returns nil if not inside a function.
+type queryCompletionOwner interface {
+	pushQueryCompletion(semtypes.SemType)
+	popQueryCompletion()
+	currentQueryCompletion() (semtypes.SemType, bool)
+}
+
+func (sa *SemanticAnalyzer) pushQueryCompletion(completionTy semtypes.SemType) {
+	sa.queryCompletionTypes = append(sa.queryCompletionTypes, completionTy)
+}
+
+func (sa *SemanticAnalyzer) popQueryCompletion() {
+	sa.queryCompletionTypes = sa.queryCompletionTypes[:len(sa.queryCompletionTypes)-1]
+}
+
+func (sa *SemanticAnalyzer) currentQueryCompletion() (semtypes.SemType, bool) {
+	if len(sa.queryCompletionTypes) == 0 {
+		return semtypes.SemType{}, false
+	}
+	return sa.queryCompletionTypes[len(sa.queryCompletionTypes)-1], true
+}
+
+func (fa *functionAnalyzer) pushQueryCompletion(completionTy semtypes.SemType) {
+	fa.queryCompletionTypes = append(fa.queryCompletionTypes, completionTy)
+}
+
+func (fa *functionAnalyzer) popQueryCompletion() {
+	fa.queryCompletionTypes = fa.queryCompletionTypes[:len(fa.queryCompletionTypes)-1]
+}
+
+func (fa *functionAnalyzer) currentQueryCompletion() (semtypes.SemType, bool) {
+	if len(fa.queryCompletionTypes) == 0 {
+		return semtypes.SemType{}, false
+	}
+	return fa.queryCompletionTypes[len(fa.queryCompletionTypes)-1], true
+}
+
+func enclosingQueryCompletionOwner(a analyzer) queryCompletionOwner {
+	for current := a; current != nil; current = current.parentAnalyzer() {
+		if owner, ok := current.(queryCompletionOwner); ok {
+			return owner
+		}
+	}
+	return nil
+}
+
+// expectedReturnType walks up to the nearest function or active query stream.
 func expectedReturnType(a analyzer) semtypes.SemType {
 	current := a
 	for current != nil {
+		if owner, ok := current.(queryCompletionOwner); ok {
+			if completionTy, active := owner.currentQueryCompletion(); active {
+				return completionTy
+			}
+		}
 		if fa, ok := current.(*functionAnalyzer); ok {
 			return fa.retTy
 		}
@@ -1225,6 +1276,21 @@ func analyzeQueryIntermediateClauses[A analyzer](
 }
 
 func analyzeQueryExpr[A analyzer](a A, queryExpr *ast.BLangQueryExpr, expectedType semtypes.SemType) bool {
+	if queryExpr.QueryConstructType == ast.TypeKind_STREAM {
+		completionTy := semtypes.StreamCompletionType(a.tyCtx(), queryExpr.GetDeterminedType())
+		if semtypes.IsZero(completionTy) {
+			a.internalErr("failed to extract stream query completion type", queryExpr.GetPosition())
+			return false
+		}
+		owner := enclosingQueryCompletionOwner(a)
+		if owner == nil {
+			a.internalErr("failed to find query stream completion owner", queryExpr.GetPosition())
+			return false
+		}
+		owner.pushQueryCompletion(completionTy)
+		defer owner.popQueryCompletion()
+	}
+
 	// Query clause ordering and shape are validated during type resolution.
 	clauses, ok := queryExprClausesForAnalysis(a, queryExpr)
 	if !ok {

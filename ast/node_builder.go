@@ -4478,8 +4478,10 @@ func (n *NodeBuilder) TransformQueryExpression(queryBLangExpression *tree.QueryE
 		switch constructType.Keyword().Text() {
 		case string(TypeKind_MAP):
 			queryExpr.QueryConstructType = TypeKind_MAP
+		case string(TypeKind_STREAM):
+			queryExpr.QueryConstructType = TypeKind_STREAM
 		default:
-			n.cx.Unimplemented("only map query construct type is supported for now", n.getPosition(constructType))
+			n.cx.Unimplemented("only map and stream query construct types are supported for now", n.getPosition(constructType))
 		}
 	}
 

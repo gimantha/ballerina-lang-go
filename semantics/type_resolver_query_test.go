@@ -366,6 +366,68 @@ func TestResolveQueryExprMapConstructType(t *testing.T) {
 	}
 }
 
+func TestResolveQueryExprStreamConstructType(t *testing.T) {
+	resolver, cx := newTestQueryResolver()
+	query := newQueryExpr(
+		newFromClause(newIntListLiteral(1, 2), nil, true),
+		newSelectClause(newIntLiteral(1)),
+	)
+	query.QueryConstructType = ast.TypeKind_STREAM
+
+	queryTy, _, ok := resolveQueryExpr(resolver, nil, query, semtypes.SemType{})
+	if !ok {
+		t.Fatalf("expected resolveQueryExpr to succeed for stream construct type")
+	}
+
+	tyCtx := semtypes.ContextFrom(cx.GetTypeEnv())
+	if valueTy := semtypes.StreamValueType(tyCtx, queryTy); !semtypes.IsSubtypeSimple(valueTy, semtypes.INT) {
+		t.Fatalf("expected stream value type to be int, got %v", valueTy)
+	}
+	if completionTy := semtypes.StreamCompletionType(tyCtx, queryTy); !semtypes.IsSubtypeSimple(completionTy, semtypes.NIL) {
+		t.Fatalf("expected stream completion type to be nil, got %v", completionTy)
+	}
+	if len(cx.Diagnostics()) > 0 {
+		t.Fatalf("expected no diagnostics, got %v", cx.Diagnostics())
+	}
+}
+
+func TestResolveQueryExprStreamCompletionType(t *testing.T) {
+	resolver, cx := newTestQueryResolver()
+	env := cx.GetTypeEnv()
+	tyCtx := semtypes.ContextFrom(env)
+	space := cx.NewSymbolSpace(*cx.GetDefaultPackage())
+
+	streamDef := semtypes.NewStreamDefinition()
+	sourceTy := streamDef.Define(env, semtypes.INT, semtypes.Union(semtypes.ERROR, semtypes.NIL))
+	sourceRef := addTestValueSymbol(cx, space, "source", sourceTy)
+	checkedValueRef := addTestValueSymbol(cx, space, "checkedValue", semtypes.Union(semtypes.INT, semtypes.ERROR))
+	checkedExpr := &ast.BLangCheckedExpr{
+		Expr: newSimpleVarRef("checkedValue", checkedValueRef),
+	}
+	checkedExpr.SetPosition(queryTestPos)
+
+	query := newQueryExpr(
+		newFromClause(newSimpleVarRef("source", sourceRef), nil, true),
+		newSelectClause(checkedExpr),
+	)
+	query.QueryConstructType = ast.TypeKind_STREAM
+
+	queryTy, _, ok := resolveQueryExpr(resolver, nil, query, semtypes.SemType{})
+	if !ok {
+		t.Fatalf("expected resolveQueryExpr to succeed for error-completing stream source")
+	}
+
+	completionTy := semtypes.StreamCompletionType(tyCtx, queryTy)
+	expectedCompletionTy := semtypes.Union(semtypes.ERROR, semtypes.NIL)
+	if !semtypes.IsSubtype(tyCtx, completionTy, expectedCompletionTy) ||
+		!semtypes.IsSubtype(tyCtx, expectedCompletionTy, completionTy) {
+		t.Fatalf("expected stream completion type to be error?, got %v", completionTy)
+	}
+	if len(cx.Diagnostics()) > 0 {
+		t.Fatalf("expected no diagnostics, got %v", cx.Diagnostics())
+	}
+}
+
 func TestResolveQueryExprCollectClause(t *testing.T) {
 	resolver, cx := newTestQueryResolver()
 
