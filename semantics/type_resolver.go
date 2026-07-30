@@ -3262,9 +3262,9 @@ func resolveExpressionInner(t typeResolver, chain *binding, expr ast.BLangAction
 	case *ast.BLangAnnotAccessExpr:
 		return resolveAnnotAccessExpr(t, chain, e)
 	case *ast.BLangCheckedExpr:
-		return resolveCheckedExpr(t, chain, e, expectedType)
+		return resolveCheckedExpr(t, chain, e, expectedType, true)
 	case *ast.BLangCheckPanickedExpr:
-		return resolveCheckedExpr(t, chain, &e.BLangCheckedExpr, expectedType)
+		return resolveCheckedExpr(t, chain, &e.BLangCheckedExpr, expectedType, false)
 	case *ast.BLangTrapExpr:
 		return resolveTrapExpr(t, chain, e)
 	case *ast.BLangNamedArgsExpression:
@@ -3695,7 +3695,13 @@ func resolveTrapExpr(t typeResolver, chain *binding, e *ast.BLangTrapExpr) (semt
 	return resultTy, defaultExpressionEffect(chain), true
 }
 
-func resolveCheckedExpr(t typeResolver, chain *binding, e *ast.BLangCheckedExpr, expectedType semtypes.SemType) (semtypes.SemType, expressionEffect, bool) {
+func resolveCheckedExpr(
+	t typeResolver,
+	chain *binding,
+	e *ast.BLangCheckedExpr,
+	expectedType semtypes.SemType,
+	propagatesError bool,
+) (semtypes.SemType, expressionEffect, bool) {
 	var innerExpected semtypes.SemType
 	if !semtypes.IsZero(expectedType) {
 		innerExpected = semtypes.Union(expectedType, semtypes.ERROR)
@@ -3703,6 +3709,9 @@ func resolveCheckedExpr(t typeResolver, chain *binding, e *ast.BLangCheckedExpr,
 	exprTy, _, ok := resolveActionOrExpression(t, chain, e.Expr, innerExpected)
 	if !ok {
 		return semtypes.SemType{}, expressionEffect{}, false
+	}
+	if propagatesError {
+		recordQueryCheckedError(t, semtypes.Intersect(exprTy, semtypes.ERROR))
 	}
 	resultTy := semtypes.Diff(exprTy, semtypes.ERROR)
 	setExpectedType(e, resultTy)
@@ -4023,14 +4032,23 @@ func resolveQueryExpr(
 	}
 
 	streamQuery := expr.QueryConstructType == ast.TypeKind_STREAM
-	fromCompletionErrorTy, ok := resolveQueryFromClause(t, chain, fromClause, streamQuery)
+	queryResolver := t
+	var checkedErrorResolver *queryCheckedErrorResolver
+	if streamQuery {
+		checkedErrorResolver = &queryCheckedErrorResolver{
+			typeResolver: t,
+			errorTy:      semtypes.NEVER,
+		}
+		queryResolver = checkedErrorResolver
+	}
+	fromCompletionErrorTy, ok := resolveQueryFromClause(queryResolver, chain, fromClause, streamQuery)
 	if !ok {
 		return semtypes.SemType{}, expressionEffect{}, false
 	}
 
 	intermediateCompletionErrorTy := semtypes.NEVER
 	queryChain, ok := resolveQueryIntermediateClausesWithCompletion(
-		t, chain, expr.QueryClauseList, lastClauseIndex, streamQuery, &intermediateCompletionErrorTy,
+		queryResolver, chain, expr.QueryClauseList, lastClauseIndex, streamQuery, &intermediateCompletionErrorTy,
 	)
 	if !ok {
 		return semtypes.SemType{}, expressionEffect{}, false
@@ -4044,7 +4062,7 @@ func resolveQueryExpr(
 			expr.QueryConstructType,
 			expectedType,
 		)
-		selectTy, _, ok := resolveActionOrExpression(t, queryChain, selectClause.Expression, selectExpectedTy)
+		selectTy, _, ok := resolveActionOrExpression(queryResolver, queryChain, selectClause.Expression, selectExpectedTy)
 		if !ok {
 			return semtypes.SemType{}, expressionEffect{}, false
 		}
@@ -4069,7 +4087,7 @@ func resolveQueryExpr(
 				semtypes.NIL,
 				semtypes.Union(fromCompletionErrorTy, intermediateCompletionErrorTy),
 			)
-			completionTy = semtypes.Union(completionTy, queryCheckedErrorType(expr))
+			completionTy = semtypes.Union(completionTy, checkedErrorResolver.errorTy)
 			sd := semtypes.NewStreamDefinition()
 			queryTy = sd.Define(t.typeEnv(), selectTy, completionTy)
 		default:
@@ -4124,35 +4142,21 @@ func resolveQueryExpr(
 	return queryTy, defaultExpressionEffect(chain), true
 }
 
-type queryCheckedErrorCollector struct {
+type queryCheckedErrorResolver struct {
+	typeResolver
 	errorTy semtypes.SemType
 }
 
-func (c *queryCheckedErrorCollector) Visit(node ast.BLangNode) ast.Visitor {
-	switch node := node.(type) {
-	case *ast.BLangCheckPanickedExpr:
-		return nil
-	case *ast.BLangCheckedExpr:
-		errorTy := semtypes.Intersect(node.Expr.GetDeterminedType(), semtypes.ERROR)
-		c.errorTy = semtypes.Union(c.errorTy, errorTy)
-	case *ast.BLangLambdaFunction, *ast.BLangQueryExpr, *ast.BLangQueryAction:
-		return nil
+func recordQueryCheckedError(t typeResolver, errorTy semtypes.SemType) {
+	for current := t; current != nil; current = current.parent() {
+		if resolver, ok := current.(*queryCheckedErrorResolver); ok {
+			resolver.errorTy = semtypes.Union(resolver.errorTy, errorTy)
+			return
+		}
+		if _, isFunctionBoundary := current.(*functionTypeResolver); isFunctionBoundary {
+			return
+		}
 	}
-	return c
-}
-
-func (c *queryCheckedErrorCollector) VisitTypeData(*ast.TypeData) ast.Visitor {
-	return nil
-}
-
-func queryCheckedErrorType(expr *ast.BLangQueryExpr) semtypes.SemType {
-	collector := &queryCheckedErrorCollector{
-		errorTy: semtypes.NEVER,
-	}
-	for _, clause := range expr.QueryClauseList {
-		ast.Walk(collector, clause)
-	}
-	return collector.errorTy
 }
 
 func resolveQueryAction(

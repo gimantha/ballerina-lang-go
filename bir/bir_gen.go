@@ -993,6 +993,8 @@ func handleActionOrExpression(ctx context, curBB *BIRBasicBlock, expr ast.BLangA
 		return newExpression(ctx, curBB, expr)
 	case *desugar.BLangServiceInit:
 		return serviceInitExpression(ctx, curBB, expr)
+	case *desugar.BLangLazyQueryExpr:
+		return lazyQueryExpression(ctx, curBB, expr)
 	case *ast.BLangLambdaFunction:
 		return lambdaFunction(ctx, curBB, expr)
 	case *ast.BLangRemoteMethodCallAction:
@@ -1023,6 +1025,31 @@ func handleActionOrExpression(ctx context, curBB *BIRBasicBlock, expr ast.BLangA
 	default:
 		panic(fmt.Sprintf("unexpected expression type: %T", expr))
 	}
+}
+
+func lazyQueryExpression(ctx context, curBB *BIRBasicBlock, expr *desugar.BLangLazyQueryExpr) expressionEffect {
+	clauses := make([]QueryClause, len(expr.Clauses))
+	for i, clause := range expr.Clauses {
+		evaluatorOps := make([]*BIROperand, len(clause.Evaluators))
+		for j, evaluator := range clause.Evaluators {
+			effect := lambdaFunction(ctx, curBB, evaluator)
+			curBB = effect.block
+			evaluatorOps[j] = effect.result
+		}
+		clauses[i] = QueryClause{
+			Kind:         QueryClauseKind(clause.Kind),
+			EvaluatorOps: evaluatorOps,
+			BoolArgs:     append([]bool{}, clause.BoolArgs...),
+			IntArgs:      append([]int64{}, clause.IntArgs...),
+			TypeArgs:     append([]semtypes.SemType{}, clause.TypeArgs...),
+		}
+	}
+	result := ctx.addTempVar(expr.GetDeterminedType())
+	curBB.Instructions = append(
+		curBB.Instructions,
+		NewQueryStreamConstructor(expr.GetDeterminedType(), result, clauses, ctx.function().loc(expr.GetPosition())),
+	)
+	return expressionEffect{result: result, block: curBB}
 }
 
 func typedescExpression(ctx context, curBB *BIRBasicBlock, expr *ast.BLangTypedescExpr) expressionEffect {

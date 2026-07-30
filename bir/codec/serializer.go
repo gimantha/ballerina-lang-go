@@ -333,6 +333,29 @@ func (bw *birWriter) writeInstruction(buf *bytes.Buffer, instr bir.BIRInstructio
 		bw.writeType(buf, instr.StreamType)
 		bw.writeOperand(buf, instr.LhsOp)
 		bw.writeOperand(buf, instr.ImplOp)
+	case *bir.NewQueryStream:
+		bw.writeType(buf, instr.StreamType)
+		bw.writeOperand(buf, instr.LhsOp)
+		bw.writeLength(buf, len(instr.Clauses))
+		for _, clause := range instr.Clauses {
+			write(buf, uint8(clause.Kind))
+			bw.writeLength(buf, len(clause.EvaluatorOps))
+			for _, evaluatorOp := range clause.EvaluatorOps {
+				bw.writeOperand(buf, evaluatorOp)
+			}
+			bw.writeLength(buf, len(clause.BoolArgs))
+			for _, arg := range clause.BoolArgs {
+				write(buf, arg)
+			}
+			bw.writeLength(buf, len(clause.IntArgs))
+			for _, arg := range clause.IntArgs {
+				write(buf, arg)
+			}
+			bw.writeLength(buf, len(clause.TypeArgs))
+			for _, arg := range clause.TypeArgs {
+				bw.writeType(buf, arg)
+			}
+		}
 	case *bir.StreamNext:
 		bw.writeOperand(buf, instr.LhsOp)
 		bw.writeOperand(buf, instr.StreamOp)

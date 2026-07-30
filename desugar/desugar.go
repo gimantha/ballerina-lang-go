@@ -20,6 +20,7 @@ package desugar
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 
 	"ballerina/ast"
 	"ballerina/context"
@@ -41,14 +42,15 @@ type desugaredNode[E ast.Node] struct {
 // Worker goroutines (per-function/class/service) must use their own non-shared
 // typeContext via functionContext.typeCtx().
 type packageContext struct {
-	compilerCtx          *context.CompilerContext
-	pkg                  *ast.BLangPackage
-	importedSymbols      map[string]model.ExportedSymbolSpace
-	importMu             sync.Mutex
-	addedImplicitImports map[string]bool
-	desugarSymbolCounter int
-	typeContext          semtypes.Context
-	iteratorTypes        *semtypes.SemTypeCache
+	compilerCtx              *context.CompilerContext
+	pkg                      *ast.BLangPackage
+	importedSymbols          map[string]model.ExportedSymbolSpace
+	importMu                 sync.Mutex
+	addedImplicitImports     map[string]bool
+	desugarSymbolCounter     int
+	lazyQueryFunctionCounter atomic.Uint64
+	typeContext              semtypes.Context
+	iteratorTypes            *semtypes.SemTypeCache
 }
 
 var _ desugarContext = &packageContext{}
@@ -236,6 +238,11 @@ func (ctx *functionContext) nextDesugarSymbolName() string {
 	name := fmt.Sprintf("$desugar$%d", ctx.desugarSymbolCounter)
 	ctx.desugarSymbolCounter++
 	return name
+}
+
+func (ctx *functionContext) nextLazyQueryFunctionName() string {
+	index := ctx.pkgCtx.lazyQueryFunctionCounter.Add(1) - 1
+	return fmt.Sprintf("$query$%d", index)
 }
 
 func (ctx *functionContext) addSymbolToSameSpace(ref model.SymbolRef, name string, symbol model.Symbol) model.SymbolRef {

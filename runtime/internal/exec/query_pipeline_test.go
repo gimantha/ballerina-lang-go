@@ -30,14 +30,14 @@ type querySliceIterator struct {
 	closed     bool
 }
 
-func (i *querySliceIterator) pull() (values.BalValue, values.BalValue, bool) {
+func (i *querySliceIterator) pull() (values.BalValue, values.BalValue, bool, bool) {
 	i.pulls++
 	if i.index >= len(i.values) {
-		return nil, i.completion, false
+		return nil, i.completion, false, true
 	}
 	value := i.values[i.index]
 	i.index++
-	return value, nil, true
+	return value, nil, true, false
 }
 
 func (i *querySliceIterator) close() values.BalValue {
@@ -141,5 +141,33 @@ func TestQueryPipelinePropagatesIteratorCompletion(t *testing.T) {
 	}
 	if result := stage.pull(); result.hasRow || result.completion != completion {
 		t.Fatalf("expected terminal completion to remain stable, got %#v", result)
+	}
+}
+
+func TestQueryPipelineResumesAfterEvaluatorCompletion(t *testing.T) {
+	completion := values.NewErrorWithMessage("checked completion")
+	var stage queryStage = newQueryFromStage(
+		&querySingletonStage{},
+		func(queryRow) queryIterator {
+			return &querySliceIterator{values: []values.BalValue{int64(1), int64(2)}}
+		},
+	)
+	stage = newQuerySelectStage(stage, func(row queryRow) queryEvalResult {
+		if row[0] == int64(1) {
+			return queryEvalResult{completion: completion}
+		}
+		return queryEvalResult{value: row[0]}
+	})
+
+	first := stage.pull()
+	if first.hasRow || first.terminal || first.completion != completion {
+		t.Fatalf("expected transient evaluator completion, got %#v", first)
+	}
+	second := stage.pull()
+	if !second.hasRow || second.row[0] != int64(2) {
+		t.Fatalf("expected pipeline to resume at the next row, got %#v", second)
+	}
+	if result := stage.pull(); result.hasRow || !result.terminal || result.completion != nil {
+		t.Fatalf("expected normal terminal completion, got %#v", result)
 	}
 }

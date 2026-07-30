@@ -124,6 +124,22 @@ type (
 		ImplOp     *BIROperand
 	}
 
+	QueryClauseKind uint8
+
+	QueryClause struct {
+		Kind         QueryClauseKind
+		EvaluatorOps []*BIROperand
+		BoolArgs     []bool
+		IntArgs      []int64
+		TypeArgs     []semtypes.SemType
+	}
+
+	NewQueryStream struct {
+		BIRInstructionBase
+		StreamType semtypes.SemType
+		Clauses    []QueryClause
+	}
+
 	StreamNext struct {
 		BIRInstructionBase
 		StreamOp *BIROperand
@@ -196,6 +212,17 @@ const (
 	TemplateKindRaw
 )
 
+const (
+	QueryClauseFrom QueryClauseKind = iota
+	QueryClauseWhere
+	QueryClauseLet
+	QueryClauseJoin
+	QueryClauseOrderBy
+	QueryClauseGroupBy
+	QueryClauseLimit
+	QueryClauseSelect
+)
+
 type (
 	MappingConstructorKeyValueEntry struct {
 		keyOp   *BIROperand
@@ -216,6 +243,7 @@ var (
 	_ BIRAssignInstruction    = &NewError{}
 	_ BIRAssignInstruction    = &NewObject{}
 	_ BIRAssignInstruction    = &NewStream{}
+	_ BIRAssignInstruction    = &NewQueryStream{}
 	_ BIRAssignInstruction    = &StreamNext{}
 	_ BIRAssignInstruction    = &StreamClose{}
 	_ BIRAssignInstruction    = &FPLoad{}
@@ -492,6 +520,30 @@ func NewStreamConstructor(streamType semtypes.SemType, lhsOp, implOp *BIROperand
 		},
 		StreamType: streamType,
 		ImplOp:     implOp,
+	}
+}
+
+func (n *NewQueryStream) GetKind() InstructionKind {
+	return INSTRUCTION_KIND_NEW_QUERY_STREAM
+}
+
+func (n *NewQueryStream) GetLhsOperand() *BIROperand {
+	return n.LhsOp
+}
+
+func NewQueryStreamConstructor(
+	streamType semtypes.SemType,
+	lhsOp *BIROperand,
+	clauses []QueryClause,
+	pos Location,
+) *NewQueryStream {
+	return &NewQueryStream{
+		BIRInstructionBase: BIRInstructionBase{
+			BIRNodeBase: BIRNodeBase{Pos: pos},
+			LhsOp:       lhsOp,
+		},
+		StreamType: streamType,
+		Clauses:    clauses,
 	}
 }
 

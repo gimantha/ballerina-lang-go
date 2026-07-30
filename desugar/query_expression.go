@@ -28,6 +28,9 @@ import (
 )
 
 func walkQueryExpr(cx *functionContext, expr *ast.BLangQueryExpr) desugaredNode[ast.BLangActionOrExpression] {
+	if expr.QueryConstructType == ast.TypeKind_STREAM {
+		return walkLazyQueryExpr(cx, expr)
+	}
 	fromClause := expr.QueryClauseList[0].(*ast.BLangFromClause)
 
 	finalClauseIndex := len(expr.QueryClauseList) - 1

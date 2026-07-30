@@ -1081,7 +1081,14 @@ func analyzeCheckedExpr[A analyzer](a A, expr *ast.BLangCheckedExpr, expectedTyp
 		errorPart := semtypes.Intersect(exprTy, semtypes.ERROR)
 		if !semtypes.IsEmpty(a.tyCtx(), errorPart) {
 			if !semtypes.IsSubtype(a.tyCtx(), errorPart, retTy) {
-				a.ctx().SemanticError("error type of check expression is not a subtype of the enclosing function's return type", expr.GetPosition())
+				a.ctx().SemanticError(
+					fmt.Sprintf(
+						"error type of check expression is not a subtype of the enclosing function's return type: expected %s, got %s",
+						semtypes.ToString(a.tyCtx(), retTy),
+						semtypes.ToString(a.tyCtx(), errorPart),
+					),
+					expr.GetPosition(),
+				)
 			}
 		}
 	}
@@ -1919,6 +1926,13 @@ func visitInner[A analyzer](a A, node ast.BLangNode) ast.Visitor {
 		// (called from analyzeActionOrExpression). Stop the walker here
 		// to avoid re-initializing/re-walking the same lambda body.
 		_ = n
+		return nil
+	case *ast.BLangQueryExpr:
+		// Query clauses are analyzed with query-specific check completion
+		// context and must not be walked again after that context is popped.
+		if !analyzeActionOrExpression(a, n, semtypes.SemType{}) {
+			return nil
+		}
 		return nil
 	case *ast.BLangQueryAction:
 		// Query actions are analyzed exactly once via analyzeQueryAction

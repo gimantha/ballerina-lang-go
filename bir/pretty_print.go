@@ -198,6 +198,8 @@ func (p *PrettyPrinter) PrintInstruction(instruction BIRInstruction) string {
 		return p.PrintNewObject(instruction)
 	case *NewStream:
 		return p.PrintNewStream(instruction)
+	case *NewQueryStream:
+		return p.PrintNewQueryStream(instruction)
 	case *StreamNext:
 		return p.PrintStreamNext(instruction)
 	case *StreamClose:
@@ -320,6 +322,10 @@ func (p *PrettyPrinter) PrintNewObject(n *NewObject) string {
 
 func (p *PrettyPrinter) PrintNewStream(n *NewStream) string {
 	return fmt.Sprintf("%s = newStream %s %s", p.PrintOperand(*n.LhsOp), p.PrintSemType(n.StreamType), p.PrintOperand(*n.ImplOp))
+}
+
+func (p *PrettyPrinter) PrintNewQueryStream(n *NewQueryStream) string {
+	return fmt.Sprintf("%s = newQueryStream %s clauses=%d", p.PrintOperand(*n.LhsOp), p.PrintSemType(n.StreamType), len(n.Clauses))
 }
 
 func (p *PrettyPrinter) PrintStreamNext(n *StreamNext) string {

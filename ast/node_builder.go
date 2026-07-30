@@ -3335,13 +3335,19 @@ func (n *NodeBuilder) TransformStreamTypeDescriptor(streamTypeDescriptorNode *tr
 	}
 	valueDesc := params.LeftTypeDescNode()
 	completionDesc := params.RightTypeDescNode()
-	if valueDesc == nil || completionDesc == nil {
-		n.cx.InternalError("stream<...> requires both value and completion type parameters", position)
+	if valueDesc == nil {
+		n.cx.InternalError("stream type requires a value type parameter", position)
 		return nil
+	}
+	nilCompletionType := &BLangValueType{TypeKind: TypeKind_NIL}
+	nilCompletionType.SetPosition(position)
+	completionType := TypeDescriptor(nilCompletionType)
+	if completionDesc != nil {
+		completionType = n.createTypeNode(completionDesc)
 	}
 	streamType := NewBLangStreamType(
 		TypeData{TypeDescriptor: n.createTypeNode(valueDesc)},
-		TypeData{TypeDescriptor: n.createTypeNode(completionDesc)},
+		TypeData{TypeDescriptor: completionType},
 	)
 	streamType.SetPosition(position)
 	return streamType

@@ -428,6 +428,32 @@ func TestResolveQueryExprStreamCompletionType(t *testing.T) {
 	}
 }
 
+func TestResolveQueryExprStreamCheckedCompletionType(t *testing.T) {
+	resolver, cx := newTestQueryResolver()
+	tyCtx := semtypes.ContextFrom(cx.GetTypeEnv())
+	space := cx.NewSymbolSpace(*cx.GetDefaultPackage())
+	checkedValueRef := addTestValueSymbol(cx, space, "checkedValue", semtypes.Union(semtypes.INT, semtypes.ERROR))
+	checkedExpr := &ast.BLangCheckedExpr{
+		Expr: newSimpleVarRef("checkedValue", checkedValueRef),
+	}
+	checkedExpr.SetPosition(queryTestPos)
+
+	query := newQueryExpr(
+		newFromClause(newIntListLiteral(1), nil, true),
+		newSelectClause(checkedExpr),
+	)
+	query.QueryConstructType = ast.TypeKind_STREAM
+
+	queryTy, _, ok := resolveQueryExpr(resolver, nil, query, semtypes.SemType{})
+	if !ok {
+		t.Fatalf("expected resolveQueryExpr to succeed with a checked select expression")
+	}
+	completionTy := semtypes.StreamCompletionType(tyCtx, queryTy)
+	if !semtypes.IsSubtype(tyCtx, semtypes.ERROR, completionTy) {
+		t.Fatalf("expected checked error in stream completion type, got %v", completionTy)
+	}
+}
+
 func TestResolveQueryExprCollectClause(t *testing.T) {
 	resolver, cx := newTestQueryResolver()
 

@@ -190,6 +190,8 @@ func execInstruction(ctx *extern.Context, inst bir.BIRNonTerminator, frame *Fram
 		execNewObject(ctx, v, frame)
 	case *bir.NewStream:
 		execNewStream(ctx, v, frame)
+	case *bir.NewQueryStream:
+		execNewQueryStream(ctx, v, frame)
 	case *bir.StreamNext:
 		execStreamNext(ctx, v, frame)
 	case *bir.StreamClose:

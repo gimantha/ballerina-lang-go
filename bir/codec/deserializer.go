@@ -716,6 +716,43 @@ func (br *birReader) readInstruction(varMap map[string]bir.BIRVariableDcl) bir.B
 		lhsOp := br.readOperand(varMap)
 		implOp := br.readOperand(varMap)
 		return bir.NewStreamConstructor(streamTy, lhsOp, implOp, pos)
+	case bir.INSTRUCTION_KIND_NEW_QUERY_STREAM:
+		streamTy := br.readType()
+		lhsOp := br.readOperand(varMap)
+		clauseCount := br.readLength()
+		clauses := make([]bir.QueryClause, clauseCount)
+		for i := range clauses {
+			var kind uint8
+			br.read(&kind)
+			evaluatorCount := br.readLength()
+			evaluatorOps := make([]*bir.BIROperand, evaluatorCount)
+			for j := range evaluatorOps {
+				evaluatorOps[j] = br.readOperand(varMap)
+			}
+			boolArgCount := br.readLength()
+			boolArgs := make([]bool, boolArgCount)
+			for j := range boolArgs {
+				br.read(&boolArgs[j])
+			}
+			intArgCount := br.readLength()
+			intArgs := make([]int64, intArgCount)
+			for j := range intArgs {
+				br.read(&intArgs[j])
+			}
+			typeArgCount := br.readLength()
+			typeArgs := make([]semtypes.SemType, typeArgCount)
+			for j := range typeArgs {
+				typeArgs[j] = br.readType()
+			}
+			clauses[i] = bir.QueryClause{
+				Kind:         bir.QueryClauseKind(kind),
+				EvaluatorOps: evaluatorOps,
+				BoolArgs:     boolArgs,
+				IntArgs:      intArgs,
+				TypeArgs:     typeArgs,
+			}
+		}
+		return bir.NewQueryStreamConstructor(streamTy, lhsOp, clauses, pos)
 	case bir.INSTRUCTION_KIND_STREAM_NEXT:
 		lhsOp := br.readOperand(varMap)
 		streamOp := br.readOperand(varMap)
