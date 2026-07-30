@@ -27,15 +27,26 @@ import "ballerina/semtypes"
 // If we are creating streams in native code and can provide more efficient implementations
 // for next or close then they should be used instead
 type Stream struct {
-	Type  semtypes.SemType
-	Next  func() BalValue
-	Close func() BalValue
+	Type    semtypes.SemType
+	next    func() BalValue
+	closeFn func() BalValue
 }
 
 func NewStream(typ semtypes.SemType, next, close func() BalValue) *Stream {
 	return &Stream{
-		Type:  typ,
-		Next:  next,
-		Close: close,
+		Type:    typ,
+		next:    next,
+		closeFn: close,
 	}
+}
+
+func (s *Stream) Next() BalValue {
+	return s.next()
+}
+
+func (s *Stream) Close() BalValue {
+	if s.closeFn == nil {
+		return nil
+	}
+	return s.closeFn()
 }

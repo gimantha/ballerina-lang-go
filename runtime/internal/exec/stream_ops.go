@@ -61,9 +61,5 @@ func execStreamNext(ctx *extern.Context, instr *bir.StreamNext, frame *Frame) {
 
 func execStreamClose(ctx *extern.Context, instr *bir.StreamClose, frame *Frame) {
 	stream := getOperandValue(ctx, instr.StreamOp, frame).(*values.Stream)
-	if stream.Close == nil {
-		setOperandValue(ctx, instr.LhsOp, frame, nil)
-		return
-	}
 	setOperandValue(ctx, instr.LhsOp, frame, stream.Close())
 }
