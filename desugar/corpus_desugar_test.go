@@ -325,6 +325,20 @@ func prettyPrintFallback(p *ast.PrettyPrinter, node ast.BLangNode) {
 		p.StartNode()
 		p.PrintString("service-init")
 		p.EndNode()
+	case *desugar.BLangLazyQueryExpr:
+		p.StartNode()
+		p.PrintString("lazy-query-expr")
+		for _, clause := range n.Clauses {
+			p.PrintString(fmt.Sprintf(
+				"%d:%d:%d:%d:%d",
+				clause.Kind,
+				len(clause.Evaluators),
+				len(clause.BoolArgs),
+				len(clause.IntArgs),
+				len(clause.TypeArgs),
+			))
+		}
+		p.EndNode()
 	default:
 		panic(fmt.Sprintf("desugar pretty printer: unsupported node %T", n))
 	}

@@ -28,6 +28,12 @@ type Visitor interface {
 	VisitTypeData(typeData *TypeData) (w Visitor)
 }
 
+// ExternalWalkableNode lets compiler stages define AST nodes outside this
+// package while preserving the standard visitor traversal.
+type ExternalWalkableNode interface {
+	WalkChildren(Visitor)
+}
+
 // Walk traverses an AST in depth-first order: It starts by calling
 // v.Visit(node); node must not be nil. If the visitor w returned by
 // v.Visit(node) is not nil, Walk is invoked recursively with visitor
@@ -959,6 +965,9 @@ func Walk(v Visitor, node BLangNode) {
 		for _, arg := range node.ArgExprs {
 			Walk(v, arg)
 		}
+
+	case ExternalWalkableNode:
+		node.WalkChildren(v)
 
 	default:
 		panic(fmt.Sprintf("unexpected node type %T", node))

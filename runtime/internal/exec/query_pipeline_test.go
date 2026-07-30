@@ -28,6 +28,7 @@ type querySliceIterator struct {
 	index      int
 	pulls      int
 	closed     bool
+	closeCount int
 }
 
 func (i *querySliceIterator) pull() (values.BalValue, values.BalValue, bool, bool) {
@@ -42,6 +43,7 @@ func (i *querySliceIterator) pull() (values.BalValue, values.BalValue, bool, boo
 
 func (i *querySliceIterator) close() values.BalValue {
 	i.closed = true
+	i.closeCount++
 	return nil
 }
 
@@ -169,5 +171,57 @@ func TestQueryPipelineResumesAfterEvaluatorCompletion(t *testing.T) {
 	}
 	if result := stage.pull(); result.hasRow || !result.terminal || result.completion != nil {
 		t.Fatalf("expected normal terminal completion, got %#v", result)
+	}
+}
+
+func TestQueryPipelineClosesSourceOnceAtCompletion(t *testing.T) {
+	iterator := &querySliceIterator{values: []values.BalValue{int64(1)}}
+	stage := newQueryFromStage(
+		&querySingletonStage{},
+		func(queryRow) queryIterator {
+			return iterator
+		},
+	)
+	pipeline := newQueryPipeline(stage)
+
+	if result := pipeline.pull(); !result.hasRow {
+		t.Fatalf("expected source row, got %#v", result)
+	}
+	if result := pipeline.pull(); !result.terminal || result.completion != nil {
+		t.Fatalf("expected normal terminal completion, got %#v", result)
+	}
+	if iterator.closeCount != 1 {
+		t.Fatalf("expected source iterator to close once, got %d", iterator.closeCount)
+	}
+	_ = pipeline.close()
+	if iterator.closeCount != 1 {
+		t.Fatalf("expected repeated close to be idempotent, got %d closes", iterator.closeCount)
+	}
+}
+
+func TestQueryPipelineLimitClosesSourceEarly(t *testing.T) {
+	iterator := &querySliceIterator{
+		values: []values.BalValue{int64(1), int64(2), int64(3)},
+	}
+	var stage queryStage = newQueryFromStage(
+		&querySingletonStage{},
+		func(queryRow) queryIterator {
+			return iterator
+		},
+	)
+	stage = newQueryLimitStage(stage, 1)
+	pipeline := newQueryPipeline(stage)
+
+	if result := pipeline.pull(); !result.hasRow || result.row[0] != int64(1) {
+		t.Fatalf("expected first limited row, got %#v", result)
+	}
+	if result := pipeline.pull(); !result.terminal {
+		t.Fatalf("expected limit completion, got %#v", result)
+	}
+	if iterator.pulls != 1 {
+		t.Fatalf("expected limit not to over-pull source, got %d pulls", iterator.pulls)
+	}
+	if iterator.closeCount != 1 {
+		t.Fatalf("expected limit to close source once, got %d closes", iterator.closeCount)
 	}
 }

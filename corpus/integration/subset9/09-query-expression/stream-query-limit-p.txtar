@@ -1,0 +1,4 @@
+-- stdout --
+-- stderr --
+error: limit cannot be negative
+        at main(stream-query-limit-p.bal:21)

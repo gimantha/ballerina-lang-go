@@ -1,0 +1,407 @@
+(checkedValue
+  (bb0 () (bb1 bb2)
+    (binary-expr ==
+      (simple-var-ref value)
+      (literal 0))
+  )
+  (bb1 (bb0) ()
+    (return
+      (error-constructor-expr (
+        (literal checked completion))))
+  )
+  (bb2 (bb0) ()
+    (return
+      (simple-var-ref value))
+  )
+)
+(groupKey
+  (bb0 () ()
+    (compound-assignment +
+      (simple-var-ref groupKeys)
+      (literal 1))
+    (return
+      (binary-expr ==
+        (binary-expr %
+          (simple-var-ref value)
+          (literal 2))
+        (literal 0)))
+  )
+)
+(inner
+  (bb0 () ()
+    (compound-assignment +
+      (simple-var-ref innerCollections)
+      (literal 1))
+    (return
+      (list-constructor-expr
+        (simple-var-ref value)
+        (binary-expr +
+          (simple-var-ref value)
+          (literal 10))))
+  )
+)
+(joinedValues
+  (bb0 () ()
+    (compound-assignment +
+      (simple-var-ref joinCollections)
+      (literal 1))
+    (return
+      (list-constructor-expr
+        (literal 10)
+        (literal 20)
+        (literal 30)))
+  )
+)
+(leftJoinKey
+  (bb0 () ()
+    (compound-assignment +
+      (simple-var-ref leftJoinKeys)
+      (literal 1))
+    (return
+      (simple-var-ref value))
+  )
+)
+(limitedValues
+  (bb0 () ()
+    (expression-stmt
+      (invocation lang.array push (
+        (simple-var-ref limitEvents)
+        (literal 2))))
+    (return
+      (list-constructor-expr
+        (literal 1)
+        (literal 2)))
+  )
+)
+(main
+  (bb0 () ()
+    (var-def
+      (variable projected (type
+        (stream-type
+          (value-type int)
+          (value-type null))) (expr
+        (query-expr
+          (from-clause
+            (var-def
+              (variable value (type
+                (value-type int))))
+            (list-constructor-expr
+              (literal 1)
+              (literal 2)
+              (literal 3)))
+          (where-clause
+            (binary-expr >
+              (simple-var-ref value)
+              (literal 1)))
+          (select-clause
+            (invocation project (
+              (simple-var-ref value))))))))
+    (expression-stmt
+      (invocation io println (
+        (simple-var-ref projections))))
+    (expression-stmt
+      (invocation io println (
+        (invocation next expr:
+          (simple-var-ref projected) ()))))
+    (expression-stmt
+      (invocation io println (
+        (simple-var-ref projections))))
+    (expression-stmt
+      (invocation io println (
+        (invocation next expr:
+          (simple-var-ref projected) ()))))
+    (expression-stmt
+      (invocation io println (
+        (simple-var-ref projections))))
+    (expression-stmt
+      (invocation io println (
+        (invocation next expr:
+          (simple-var-ref projected) ()))))
+    (var-def
+      (variable nested (type
+        (stream-type
+          (value-type int)
+          (value-type null))) (expr
+        (query-expr
+          (from-clause
+            (var-def
+              (variable value (type
+                (value-type int))))
+            (list-constructor-expr
+              (literal 1)
+              (literal 2)
+              (literal 3)))
+          (from-clause
+            (var-def
+              (variable nestedValue (type
+                (value-type int))))
+            (invocation inner (
+              (simple-var-ref value))))
+          (let-clause
+            (var-def
+              (variable total (type
+                (value-type int)) (expr
+                (binary-expr +
+                  (simple-var-ref value)
+                  (simple-var-ref nestedValue))))))
+          (where-clause
+            (binary-expr >
+              (simple-var-ref total)
+              (literal 3)))
+          (limit-clause
+            (literal 2))
+          (select-clause
+            (simple-var-ref total))))))
+    (expression-stmt
+      (invocation io println (
+        (simple-var-ref innerCollections))))
+    (expression-stmt
+      (invocation io println (
+        (invocation next expr:
+          (simple-var-ref nested) ()))))
+    (expression-stmt
+      (invocation io println (
+        (simple-var-ref innerCollections))))
+    (expression-stmt
+      (invocation io println (
+        (invocation next expr:
+          (simple-var-ref nested) ()))))
+    (expression-stmt
+      (invocation io println (
+        (simple-var-ref innerCollections))))
+    (expression-stmt
+      (invocation io println (
+        (invocation next expr:
+          (simple-var-ref nested) ()))))
+    (expression-stmt
+      (invocation io println (
+        (simple-var-ref innerCollections))))
+    (var-def
+      (variable joined (type
+        (stream-type
+          (value-type int)
+          (value-type null))) (expr
+        (query-expr
+          (from-clause
+            (var-def
+              (variable left (type
+                (value-type int))))
+            (list-constructor-expr
+              (literal 2)
+              (literal 1)
+              (literal 4)))
+          (join-clause
+            (var-def
+              (variable right (type
+                (value-type int))))
+            (invocation joinedValues ())
+            (on-clause
+              (invocation leftJoinKey (
+                (simple-var-ref left)))
+              (invocation rightJoinKey (
+                (simple-var-ref right)))))
+          (order-by-clause
+            (order-key descending
+              (simple-var-ref right)))
+          (select-clause
+            (binary-expr +
+              (simple-var-ref left)
+              (simple-var-ref right)))))))
+    (expression-stmt
+      (invocation io println (
+        (simple-var-ref joinCollections))))
+    (expression-stmt
+      (invocation io println (
+        (invocation next expr:
+          (simple-var-ref joined) ()))))
+    (expression-stmt
+      (invocation io println (
+        (simple-var-ref joinCollections))))
+    (expression-stmt
+      (invocation io println (
+        (simple-var-ref leftJoinKeys))))
+    (expression-stmt
+      (invocation io println (
+        (simple-var-ref rightJoinKeys))))
+    (expression-stmt
+      (invocation io println (
+        (invocation next expr:
+          (simple-var-ref joined) ()))))
+    (expression-stmt
+      (invocation io println (
+        (invocation next expr:
+          (simple-var-ref joined) ()))))
+    (var-def
+      (variable outerJoined (type
+        (stream-type
+          (value-type boolean)
+          (value-type null))) (expr
+        (query-expr
+          (from-clause
+            (var-def
+              (variable left (type
+                (value-type int))))
+            (list-constructor-expr
+              (literal 1)
+              (literal 2)))
+          (join-clause outer
+            (var-def
+              (variable right))
+            (list-constructor-expr
+              (literal 1))
+            (on-clause
+              (simple-var-ref left)
+              (simple-var-ref right)))
+          (select-clause
+            (type-test-expr is
+              (simple-var-ref right)
+              (value-type null)))))))
+    (expression-stmt
+      (invocation io println (
+        (invocation next expr:
+          (simple-var-ref outerJoined) ()))))
+    (expression-stmt
+      (invocation io println (
+        (invocation next expr:
+          (simple-var-ref outerJoined) ()))))
+    (expression-stmt
+      (invocation io println (
+        (invocation next expr:
+          (simple-var-ref outerJoined) ()))))
+    (var-def
+      (variable grouped (type
+        (stream-type
+          (array-type
+            (value-type int) dimensions: 1 ([]))
+          (value-type null))) (expr
+        (query-expr
+          (from-clause
+            (var-def
+              (variable value (type
+                (value-type int))))
+            (list-constructor-expr
+              (literal 1)
+              (literal 2)
+              (literal 3)
+              (literal 4)))
+          (group-by-clause
+            (grouping-key
+              (var-def
+                (variable _ (expr
+                  (invocation groupKey (
+                    (simple-var-ref value))))))))
+          (select-clause
+            (list-constructor-expr
+              (simple-var-ref value)))))))
+    (expression-stmt
+      (invocation io println (
+        (simple-var-ref groupKeys))))
+    (expression-stmt
+      (invocation io println (
+        (invocation next expr:
+          (simple-var-ref grouped) ()))))
+    (expression-stmt
+      (invocation io println (
+        (simple-var-ref groupKeys))))
+    (expression-stmt
+      (invocation io println (
+        (invocation next expr:
+          (simple-var-ref grouped) ()))))
+    (expression-stmt
+      (invocation io println (
+        (invocation next expr:
+          (simple-var-ref grouped) ()))))
+    (var-def
+      (variable checked (type
+        (stream-type
+          (value-type int)
+          (union-type
+            (error-type)
+            (value-type null)))) (expr
+        (query-expr
+          (from-clause
+            (var-def
+              (variable value (type
+                (value-type int))))
+            (list-constructor-expr
+              (literal 0)
+              (literal 1)))
+          (select-clause
+            (checked-expr
+              (invocation checkedValue (
+                (simple-var-ref value)))))))))
+    (expression-stmt
+      (invocation io println (
+        (invocation next expr:
+          (simple-var-ref checked) ()))))
+    (expression-stmt
+      (invocation io println (
+        (invocation next expr:
+          (simple-var-ref checked) ()))))
+    (expression-stmt
+      (invocation io println (
+        (invocation next expr:
+          (simple-var-ref checked) ()))))
+    (var-def
+      (variable limited (type
+        (stream-type
+          (value-type int)
+          (value-type null))) (expr
+        (query-expr
+          (from-clause
+            (var-def
+              (variable value (type
+                (value-type int))))
+            (invocation limitedValues ()))
+          (limit-clause
+            (invocation queryLimit ()))
+          (select-clause
+            (simple-var-ref value))))))
+    (expression-stmt
+      (invocation io println (
+        (simple-var-ref limitEvents))))
+    (expression-stmt
+      (invocation io println (
+        (invocation next expr:
+          (simple-var-ref limited) ()))))
+    (expression-stmt
+      (invocation io println (
+        (simple-var-ref limitEvents))))
+    (expression-stmt
+      (invocation io println (
+        (invocation next expr:
+          (simple-var-ref limited) ()))))
+  )
+)
+(project
+  (bb0 () ()
+    (compound-assignment +
+      (simple-var-ref projections)
+      (literal 1))
+    (return
+      (binary-expr *
+        (simple-var-ref value)
+        (literal 10)))
+  )
+)
+(queryLimit
+  (bb0 () ()
+    (expression-stmt
+      (invocation lang.array push (
+        (simple-var-ref limitEvents)
+        (literal 1))))
+    (return
+      (literal 1))
+  )
+)
+(rightJoinKey
+  (bb0 () ()
+    (compound-assignment +
+      (simple-var-ref rightJoinKeys)
+      (literal 1))
+    (return
+      (binary-expr /
+        (simple-var-ref value)
+        (literal 10)))
+  )
+)

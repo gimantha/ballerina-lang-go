@@ -1,0 +1,26 @@
+-- stdout --
+{"value":10}
+{"value":20}
+{"value":1}
+{"value":2}
+{"value":"A"}
+{"value":"😀"}
+{"value":<a/>}
+{"value":text}
+{"value":1}
+
+2
+{"value":1}
+
+2
+1
+1
+{"value":10}
+{"value":20}
+error("source completion")
+1
+error("source completion")
+1
+error("source completion")
+1
+-- stderr --

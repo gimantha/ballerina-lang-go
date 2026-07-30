@@ -1,0 +1,650 @@
+module $anon.. v 0.0.0;
+class RangeIterator {
+  nextValue int
+
+  init() -> nil{
+    bb0 {
+      %2 = ConstantLoad 1
+      %3 = ConstantLoad nextValue
+      self[%3] = %2;
+      return;
+    }
+  }
+
+  next() -> nil|{| value: int, never... |}{
+    bb0 {
+      %4 = ConstantLoad nextValue
+      %3 = self[%4];
+      %5 = %3;
+      %6 = ConstantLoad 3
+      %7 = %6;
+      %2 = > %5 %7;
+      %2 ? bb1 : bb2;
+    }
+    bb1 {
+      PushScopeFrame 1
+      %0 = ConstantLoad <nil>
+      (1, %0) = %0;
+      PopScopeFrame
+      return;
+    }
+    bb2 {
+      PushScopeFrame 11
+      %1 = ConstantLoad nextValue
+      %0 = (1, self)[%1];
+      value = %0;
+      %3 = ConstantLoad nextValue
+      %4 = (1, self)[%3];
+      %5 = %4;
+      %6 = ConstantLoad 1
+      %7 = %6;
+      %8 = + %5 %7;
+      (1, self)[%3] = %8;
+      %9 = ConstantLoad value
+      %10 = newMap {| value: int, never... |}{%9=value}
+      (1, %0) = %10;
+      PopScopeFrame
+      return;
+    }
+  }
+}
+class RangeIterable {
+  iteratorValue object { public function init() returns nil; public function next() returns nil|{| value: int, never... |}; private int nextValue }
+
+  init(object { public function init() returns nil; public function next() returns nil|{| value: int, never... |}; private int nextValue }) -> nil{
+    bb0 {
+      %3 = ConstantLoad iteratorValue
+      self[%3] = iteratorValue;
+      return;
+    }
+  }
+
+  iterator() -> object { public function init() returns nil; public function next() returns nil|{| value: int, never... |}; private int nextValue }{
+    bb0 {
+      %3 = ConstantLoad iteratorValue
+      %2 = self[%3];
+      %0 = %2;
+      return;
+    }
+  }
+}
+class FailingStreamIterator {
+  nextValue int
+  closeCount int
+
+  close() -> nil{
+    bb0 {
+      %2 = ConstantLoad closeCount
+      %3 = self[%2];
+      %4 = %3;
+      %5 = ConstantLoad 1
+      %6 = %5;
+      %7 = + %4 %6;
+      self[%2] = %7;
+      return;
+    }
+  }
+
+  init() -> nil{
+    bb0 {
+      %2 = ConstantLoad 1
+      %3 = ConstantLoad nextValue
+      self[%3] = %2;
+      %4 = ConstantLoad 0
+      %5 = ConstantLoad closeCount
+      self[%5] = %4;
+      return;
+    }
+  }
+
+  next() -> nil|error|{| value: int, never... |}{
+    bb0 {
+      %4 = ConstantLoad nextValue
+      %3 = self[%4];
+      %5 = %3;
+      %6 = ConstantLoad 2
+      %7 = %6;
+      %2 = > %5 %7;
+      %2 ? bb1 : bb2;
+    }
+    bb1 {
+      PushScopeFrame 2
+      %0 = ConstantLoad source completion
+      %1 = newError error(%0)
+      (1, %0) = %1;
+      PopScopeFrame
+      return;
+    }
+    bb2 {
+      PushScopeFrame 11
+      %1 = ConstantLoad nextValue
+      %0 = (1, self)[%1];
+      value = %0;
+      %3 = ConstantLoad nextValue
+      %4 = (1, self)[%3];
+      %5 = %4;
+      %6 = ConstantLoad 1
+      %7 = %6;
+      %8 = + %5 %7;
+      (1, self)[%3] = %8;
+      %9 = ConstantLoad value
+      %10 = newMap {| value: int, never... |}{%9=value}
+      (1, %0) = %10;
+      PopScopeFrame
+      return;
+    }
+  }
+}
+class TrackedStreamIterator {
+  nextValue int
+  closeCount int
+
+  close() -> nil{
+    bb0 {
+      %2 = ConstantLoad closeCount
+      %3 = self[%2];
+      %4 = %3;
+      %5 = ConstantLoad 1
+      %6 = %5;
+      %7 = + %4 %6;
+      self[%2] = %7;
+      return;
+    }
+  }
+
+  init() -> nil{
+    bb0 {
+      %2 = ConstantLoad 1
+      %3 = ConstantLoad nextValue
+      self[%3] = %2;
+      %4 = ConstantLoad 0
+      %5 = ConstantLoad closeCount
+      self[%5] = %4;
+      return;
+    }
+  }
+
+  next() -> nil|{| value: int, never... |}{
+    bb0 {
+      %4 = ConstantLoad nextValue
+      %3 = self[%4];
+      %5 = %3;
+      %6 = ConstantLoad 3
+      %7 = %6;
+      %2 = > %5 %7;
+      %2 ? bb1 : bb2;
+    }
+    bb1 {
+      PushScopeFrame 1
+      %0 = ConstantLoad <nil>
+      (1, %0) = %0;
+      PopScopeFrame
+      return;
+    }
+    bb2 {
+      PushScopeFrame 11
+      %1 = ConstantLoad nextValue
+      %0 = (1, self)[%1];
+      value = %0;
+      %3 = ConstantLoad nextValue
+      %4 = (1, self)[%3];
+      %5 = %4;
+      %6 = ConstantLoad 1
+      %7 = %6;
+      %8 = + %5 %7;
+      (1, self)[%3] = %8;
+      %9 = ConstantLoad value
+      %10 = newMap {| value: int, never... |}{%9=value}
+      (1, %0) = %10;
+      PopScopeFrame
+      return;
+    }
+  }
+}
+$query$0() -> error|[[int, int, never...], never...]{
+  bb0 {
+    %1 = ConstantLoad 1
+    %2 = ConstantLoad 2
+    %3 = ConstantLoad 2
+    %4 = newArray [int, int, never...][%3]{%1, %2}
+    %5 = ConstantLoad 1
+    %6 = newArray [[int, int, never...], never...][%5]{%4}
+    %0 = %6;
+    return;
+  }
+}
+$query$1(int) -> error|[int, never...]{
+  bb0 {
+    %3 = $desugar$0;
+    %4 = ConstantLoad 10
+    %5 = %4;
+    %2 = * %3 %5;
+    %6 = ConstantLoad 1
+    %7 = newArray [int, never...][%6]{%2}
+    %0 = %7;
+    return;
+  }
+}
+$query$2() -> error|[{| int... |}, never...]{
+  bb0 {
+    %1 = ConstantLoad 1
+    %2 = newArray [{| int... |}, never...][%1]{(1, numbers)}
+    %0 = %2;
+    return;
+  }
+}
+$query$3(int) -> error|[int, never...]{
+  bb0 {
+    %2 = ConstantLoad 1
+    %3 = newArray [int, never...][%2]{$desugar$1}
+    %0 = %3;
+    return;
+  }
+}
+$query$4() -> error|["A😀", never...]{
+  bb0 {
+    %1 = ConstantLoad A😀
+    %2 = ConstantLoad 1
+    %3 = newArray ["A😀", never...][%2]{%1}
+    %0 = %3;
+    return;
+  }
+}
+$query$5(string) -> error|[string, never...]{
+  bb0 {
+    %2 = ConstantLoad 1
+    %3 = newArray [string, never...][%2]{$desugar$2}
+    %0 = %3;
+    return;
+  }
+}
+$query$6() -> error|[xml<xml:Text|xml:Element>, never...]{
+  bb0 {
+    %1 = ConstantLoad a
+    %2 = newXMLElement(%1, ())
+    %3 = ConstantLoad text
+    %4 = newXMLText(%3)
+    %5 = newXMLSequence{%2, %4}
+    %6 = ConstantLoad 1
+    %7 = newArray [xml<xml:Text|xml:Element>, never...][%6]{%5}
+    %0 = %7;
+    return;
+  }
+}
+$query$7(xml<xml:Text|xml:Element>) -> error|[xml<xml:Text|xml:Element>, never...]{
+  bb0 {
+    %2 = ConstantLoad 1
+    %3 = newArray [xml<xml:Text|xml:Element>, never...][%2]{$desugar$3}
+    %0 = %3;
+    return;
+  }
+}
+$query$8() -> error|[object&object { public function init(object { public function init() returns nil; public function next() returns nil|{| value: int, never... |}; private int nextValue }) returns nil; public function iterator() returns object { public function init() returns nil; public function next() returns nil|{| value: int, never... |}; private int nextValue }; private object { public function init() returns nil; public function next() returns nil|{| value: int, never... |}; private int nextValue } iteratorValue }, never...]{
+  bb0 {
+    %1 = newObject $anon/.:RangeIterable
+    %2 = init(%1,(1, objectIterator)) -> bb1;
+  }
+  bb1 {
+    %4 = %2 is nil
+    %4 ? bb2 : bb3;
+  }
+  bb2 {
+    %3 = %1;
+    GOTO bb4;
+  }
+  bb3 {
+    %3 = %2;
+    GOTO bb4;
+  }
+  bb4 {
+    %5 = ConstantLoad 1
+    %6 = newArray [object&object { public function init(object { public function init() returns nil; public function next() returns nil|{| value: int, never... |}; private int nextValue }) returns nil; public function iterator() returns object { public function init() returns nil; public function next() returns nil|{| value: int, never... |}; private int nextValue }; private object { public function init() returns nil; public function next() returns nil|{| value: int, never... |}; private int nextValue } iteratorValue }, never...][%5]{%3}
+    %0 = %6;
+    return;
+  }
+}
+$query$9() -> error|[1, never...]{
+  bb0 {
+    %1 = ConstantLoad 1
+    %2 = ConstantLoad 1
+    %3 = newArray [1, never...][%2]{%1}
+    %0 = %3;
+    return;
+  }
+}
+$query$10(int) -> error|[int, never...]{
+  bb0 {
+    %2 = ConstantLoad 1
+    %3 = newArray [int, never...][%2]{$desugar$4}
+    %0 = %3;
+    return;
+  }
+}
+$query$11() -> error|[stream, never...]{
+  bb0 {
+    %1 = ConstantLoad 1
+    %2 = newArray [stream, never...][%1]{(1, trackedStream)}
+    %0 = %2;
+    return;
+  }
+}
+$query$12() -> error|[1, never...]{
+  bb0 {
+    %1 = ConstantLoad 1
+    %2 = ConstantLoad 1
+    %3 = newArray [1, never...][%2]{%1}
+    %0 = %3;
+    return;
+  }
+}
+$query$13(int) -> error|[int, never...]{
+  bb0 {
+    %2 = ConstantLoad 1
+    %3 = newArray [int, never...][%2]{$desugar$5}
+    %0 = %3;
+    return;
+  }
+}
+$query$14() -> error|[stream, never...]{
+  bb0 {
+    %1 = ConstantLoad 1
+    %2 = newArray [stream, never...][%1]{(1, sourceStream)}
+    %0 = %2;
+    return;
+  }
+}
+$query$15(int) -> error|[int, never...]{
+  bb0 {
+    %3 = $desugar$6;
+    %4 = ConstantLoad 10
+    %5 = %4;
+    %2 = * %3 %5;
+    %6 = ConstantLoad 1
+    %7 = newArray [int, never...][%6]{%2}
+    %0 = %7;
+    return;
+  }
+}
+$query$16() -> error|[[int, int, never...], never...]{
+  bb0 {
+    %1 = ConstantLoad 1
+    %2 = ConstantLoad 2
+    %3 = ConstantLoad 2
+    %4 = newArray [int, int, never...][%3]{%1, %2}
+    %5 = ConstantLoad 1
+    %6 = newArray [[int, int, never...], never...][%5]{%4}
+    %0 = %6;
+    return;
+  }
+}
+$query$17() -> error|[stream, never...]{
+  bb0 {
+    %1 = ConstantLoad 1
+    %2 = newArray [stream, never...][%1]{(1, joinStream)}
+    %0 = %2;
+    return;
+  }
+}
+$query$18(int) -> error|[int, never...]{
+  bb0 {
+    %2 = ConstantLoad 1
+    %3 = newArray [int, never...][%2]{$desugar$7}
+    %0 = %3;
+    return;
+  }
+}
+$query$19(int) -> error|[int, never...]{
+  bb0 {
+    %2 = ConstantLoad 1
+    %3 = newArray [int, never...][%2]{$desugar$8}
+    %0 = %3;
+    return;
+  }
+}
+$query$20(int,int) -> error|[int, never...]{
+  bb0 {
+    %4 = $desugar$9;
+    %5 = $desugar$10;
+    %3 = + %4 %5;
+    %6 = ConstantLoad 1
+    %7 = newArray [int, never...][%6]{%3}
+    %0 = %7;
+    return;
+  }
+}
+main() -> nil{
+  bb0 {
+    %1 = fp $anon/.:$query$0
+    %2 = fp $anon/.:$query$1
+    %3 = newQueryStream stream clauses=2
+    listValues = %3;
+    %5 = streamNext listValues
+    %6 = println(%5) -> bb1;
+  }
+  bb1 {
+    %7 = streamNext listValues
+    %8 = println(%7) -> bb2;
+  }
+  bb2 {
+    %9 = ConstantLoad one
+    %10 = ConstantLoad 1
+    %11 = ConstantLoad two
+    %12 = ConstantLoad 2
+    %13 = newMap {| int... |}{%9=%10, %11=%12}
+    numbers = %13;
+    %15 = closure_fp $anon/.:$query$2
+    %16 = fp $anon/.:$query$3
+    %17 = newQueryStream stream clauses=2
+    mapValues = %17;
+    %19 = streamNext mapValues
+    %20 = println(%19) -> bb3;
+  }
+  bb3 {
+    %21 = streamNext mapValues
+    %22 = println(%21) -> bb4;
+  }
+  bb4 {
+    %23 = fp $anon/.:$query$4
+    %24 = fp $anon/.:$query$5
+    %25 = newQueryStream stream clauses=2
+    characters = %25;
+    %27 = streamNext characters
+    %28 = println(%27) -> bb5;
+  }
+  bb5 {
+    %29 = streamNext characters
+    %30 = println(%29) -> bb6;
+  }
+  bb6 {
+    %31 = fp $anon/.:$query$6
+    %32 = fp $anon/.:$query$7
+    %33 = newQueryStream stream clauses=2
+    xmlItems = %33;
+    %35 = streamNext xmlItems
+    %36 = println(%35) -> bb7;
+  }
+  bb7 {
+    %37 = streamNext xmlItems
+    %38 = println(%37) -> bb8;
+  }
+  bb8 {
+    %39 = newObject $anon/.:RangeIterator
+    %40 = init(%39) -> bb9;
+  }
+  bb9 {
+    %42 = %40 is nil
+    %42 ? bb10 : bb11;
+  }
+  bb10 {
+    %41 = %39;
+    GOTO bb12;
+  }
+  bb11 {
+    %41 = %40;
+    GOTO bb12;
+  }
+  bb12 {
+    objectIterator = %41;
+    %44 = closure_fp $anon/.:$query$8
+    %45 = fp $anon/.:$query$9
+    %46 = fp $anon/.:$query$10
+    %47 = newQueryStream stream clauses=3
+    objectValues = %47;
+    %49 = streamNext objectValues
+    %50 = println(%49) -> bb13;
+  }
+  bb13 {
+    %51 = streamNext objectValues
+    %52 = println(%51) -> bb14;
+  }
+  bb14 {
+    %54 = ConstantLoad nextValue
+    %53 = objectIterator[%54];
+    %55 = %53;
+    %56 = println(%55) -> bb15;
+  }
+  bb15 {
+    %57 = streamClose objectValues
+    %58 = %57;
+    %59 = newObject $anon/.:TrackedStreamIterator
+    %60 = init(%59) -> bb16;
+  }
+  bb16 {
+    %62 = %60 is nil
+    %62 ? bb17 : bb18;
+  }
+  bb17 {
+    %61 = %59;
+    GOTO bb19;
+  }
+  bb18 {
+    %61 = %60;
+    GOTO bb19;
+  }
+  bb19 {
+    trackedIterator = %61;
+    %64 = newStream stream trackedIterator
+    trackedStream = %64;
+    %66 = closure_fp $anon/.:$query$11
+    %67 = fp $anon/.:$query$12
+    %68 = fp $anon/.:$query$13
+    %69 = newQueryStream stream clauses=3
+    limitedStreamValues = %69;
+    %71 = streamNext limitedStreamValues
+    %72 = println(%71) -> bb20;
+  }
+  bb20 {
+    %73 = streamNext limitedStreamValues
+    %74 = println(%73) -> bb21;
+  }
+  bb21 {
+    %76 = ConstantLoad nextValue
+    %75 = trackedIterator[%76];
+    %77 = %75;
+    %78 = println(%77) -> bb22;
+  }
+  bb22 {
+    %80 = ConstantLoad closeCount
+    %79 = trackedIterator[%80];
+    %81 = %79;
+    %82 = println(%81) -> bb23;
+  }
+  bb23 {
+    %83 = streamClose limitedStreamValues
+    %84 = %83;
+    %86 = ConstantLoad closeCount
+    %85 = trackedIterator[%86];
+    %87 = %85;
+    %88 = println(%87) -> bb24;
+  }
+  bb24 {
+    %89 = newObject $anon/.:FailingStreamIterator
+    %90 = init(%89) -> bb25;
+  }
+  bb25 {
+    %92 = %90 is nil
+    %92 ? bb26 : bb27;
+  }
+  bb26 {
+    %91 = %89;
+    GOTO bb28;
+  }
+  bb27 {
+    %91 = %90;
+    GOTO bb28;
+  }
+  bb28 {
+    sourceIterator = %91;
+    %94 = newStream stream sourceIterator
+    sourceStream = %94;
+    %96 = closure_fp $anon/.:$query$14
+    %97 = fp $anon/.:$query$15
+    %98 = newQueryStream stream clauses=2
+    sourceValues = %98;
+    %100 = streamNext sourceValues
+    %101 = println(%100) -> bb29;
+  }
+  bb29 {
+    %102 = streamNext sourceValues
+    %103 = println(%102) -> bb30;
+  }
+  bb30 {
+    %104 = streamNext sourceValues
+    %105 = println(%104) -> bb31;
+  }
+  bb31 {
+    %107 = ConstantLoad closeCount
+    %106 = sourceIterator[%107];
+    %108 = %106;
+    %109 = println(%108) -> bb32;
+  }
+  bb32 {
+    %110 = streamNext sourceValues
+    %111 = println(%110) -> bb33;
+  }
+  bb33 {
+    %113 = ConstantLoad closeCount
+    %112 = sourceIterator[%113];
+    %114 = %112;
+    %115 = println(%114) -> bb34;
+  }
+  bb34 {
+    %116 = newObject $anon/.:FailingStreamIterator
+    %117 = init(%116) -> bb35;
+  }
+  bb35 {
+    %119 = %117 is nil
+    %119 ? bb36 : bb37;
+  }
+  bb36 {
+    %118 = %116;
+    GOTO bb38;
+  }
+  bb37 {
+    %118 = %117;
+    GOTO bb38;
+  }
+  bb38 {
+    joinIterator = %118;
+    %121 = newStream stream joinIterator
+    joinStream = %121;
+    %123 = fp $anon/.:$query$16
+    %124 = closure_fp $anon/.:$query$17
+    %125 = fp $anon/.:$query$18
+    %126 = fp $anon/.:$query$19
+    %127 = fp $anon/.:$query$20
+    %128 = newQueryStream stream clauses=3
+    joinedValues = %128;
+    %130 = streamNext joinedValues
+    %131 = println(%130) -> bb39;
+  }
+  bb39 {
+    %133 = ConstantLoad closeCount
+    %132 = joinIterator[%133];
+    %134 = %132;
+    %135 = println(%134) -> bb40;
+  }
+  bb40 {
+    return;
+  }
+}

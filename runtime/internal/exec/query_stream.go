@@ -44,6 +44,7 @@ func execNewQueryStream(ctx *extern.Context, instr *bir.NewQueryStream, frame *F
 				stage,
 				queryIteratorFactoryFromEvaluator(ctx, evaluators[0]),
 				evaluators[1],
+				evaluators[2],
 				clause.BoolArgs[0],
 			)
 		case bir.QueryClauseOrderBy:
@@ -74,8 +75,9 @@ func execNewQueryStream(ctx *extern.Context, instr *bir.NewQueryStream, frame *F
 		semtypes.NEVER,
 	)
 	recordAtomicTy := semtypes.ToMappingAtomicType(ctx.TypeCtx, recordTy)
+	pipeline := newQueryPipeline(stage)
 	next := func() values.BalValue {
-		result := stage.pull()
+		result := pipeline.pull()
 		if result.hasRow {
 			return values.NewMap(recordTy, recordAtomicTy, false, []values.MapEntry{{
 				Key:   "value",
@@ -84,7 +86,7 @@ func execNewQueryStream(ctx *extern.Context, instr *bir.NewQueryStream, frame *F
 		}
 		return result.completion
 	}
-	stream := values.NewStream(instr.StreamType, next, stage.close)
+	stream := values.NewStream(instr.StreamType, next, pipeline.close)
 	setOperandValue(ctx, instr.LhsOp, frame, stream)
 }
 
@@ -214,10 +216,9 @@ func (i *queryStreamIterator) close() values.BalValue {
 }
 
 type queryObjectIterator struct {
-	ctx         *extern.Context
-	iterator    *values.Object
-	nextHandle  extern.MethodHandle
-	closeHandle *extern.MethodHandle
+	ctx        *extern.Context
+	iterator   *values.Object
+	nextHandle extern.MethodHandle
 }
 
 func (i *queryObjectIterator) pull() (values.BalValue, values.BalValue, bool, bool) {
@@ -229,14 +230,7 @@ func (i *queryObjectIterator) pull() (values.BalValue, values.BalValue, bool, bo
 }
 
 func (i *queryObjectIterator) close() values.BalValue {
-	if i.closeHandle == nil {
-		return nil
-	}
-	result, err := i.ctx.InvokeMethod(*i.closeHandle, []values.BalValue{i.iterator})
-	if err != nil {
-		panic(err)
-	}
-	return result
+	return nil
 }
 
 func queryIteratorForValue(ctx *extern.Context, value values.BalValue) queryIterator {
@@ -276,9 +270,6 @@ func queryIteratorForObject(ctx *extern.Context, iterable *values.Object) queryI
 		ctx:        ctx,
 		iterator:   iterator,
 		nextHandle: nextHandle,
-	}
-	if closeHandle, ok := ctx.LookupObjectMethod(iterator, "close"); ok {
-		result.closeHandle = &closeHandle
 	}
 	return result
 }

@@ -1,0 +1,667 @@
+module $anon.. v 0.0.0;
+groupKeys  int;
+innerCollections  int;
+joinCollections  int;
+leftJoinKeys  int;
+limitEvents  [int...];
+projections  int;
+rightJoinKeys  int;
+project(int) -> int{
+  bb0 {
+    %3 = ConstantLoad 1
+    %4 = %3;
+    %2 = + projections %4;
+    projections = %2;
+    %6 = value;
+    %7 = ConstantLoad 10
+    %8 = %7;
+    %5 = * %6 %8;
+    %0 = %5;
+    return;
+  }
+}
+inner(int) -> [int...]{
+  bb0 {
+    %3 = ConstantLoad 1
+    %4 = %3;
+    %2 = + innerCollections %4;
+    innerCollections = %2;
+    %6 = value;
+    %7 = ConstantLoad 10
+    %8 = %7;
+    %5 = + %6 %8;
+    %9 = ConstantLoad 2
+    %10 = newArray [int...][%9]{value, %5}
+    %0 = %10;
+    return;
+  }
+}
+joinedValues() -> [int...]{
+  bb0 {
+    %2 = ConstantLoad 1
+    %3 = %2;
+    %1 = + joinCollections %3;
+    joinCollections = %1;
+    %4 = ConstantLoad 10
+    %5 = ConstantLoad 20
+    %6 = ConstantLoad 30
+    %7 = ConstantLoad 3
+    %8 = newArray [int...][%7]{%4, %5, %6}
+    %0 = %8;
+    return;
+  }
+}
+leftJoinKey(int) -> int{
+  bb0 {
+    %3 = ConstantLoad 1
+    %4 = %3;
+    %2 = + leftJoinKeys %4;
+    leftJoinKeys = %2;
+    %0 = value;
+    return;
+  }
+}
+rightJoinKey(int) -> int{
+  bb0 {
+    %3 = ConstantLoad 1
+    %4 = %3;
+    %2 = + rightJoinKeys %4;
+    rightJoinKeys = %2;
+    %6 = value;
+    %7 = ConstantLoad 10
+    %8 = %7;
+    %5 = / %6 %8;
+    %0 = %5;
+    return;
+  }
+}
+groupKey(int) -> boolean{
+  bb0 {
+    %3 = ConstantLoad 1
+    %4 = %3;
+    %2 = + groupKeys %4;
+    groupKeys = %2;
+    %7 = value;
+    %8 = ConstantLoad 2
+    %9 = %8;
+    %6 = % %7 %9;
+    %10 = %6;
+    %11 = ConstantLoad 0
+    %12 = %11;
+    %5 = == %10 %12;
+    %0 = %5;
+    return;
+  }
+}
+limitedValues() -> [int...]{
+  bb0 {
+    %1 = ConstantLoad 2
+    %2 = %1;
+    %3 = push(limitEvents,%2) -> bb1;
+  }
+  bb1 {
+    %4 = ConstantLoad 1
+    %5 = ConstantLoad 2
+    %6 = ConstantLoad 2
+    %7 = newArray [int...][%6]{%4, %5}
+    %0 = %7;
+    return;
+  }
+}
+queryLimit() -> int{
+  bb0 {
+    %1 = ConstantLoad 1
+    %2 = %1;
+    %3 = push(limitEvents,%2) -> bb1;
+  }
+  bb1 {
+    %4 = ConstantLoad 1
+    %0 = %4;
+    return;
+  }
+}
+checkedValue(int) -> int|error{
+  bb0 {
+    %3 = value;
+    %4 = ConstantLoad 0
+    %5 = %4;
+    %2 = == %3 %5;
+    %2 ? bb1 : bb2;
+  }
+  bb1 {
+    PushScopeFrame 2
+    %0 = ConstantLoad checked completion
+    %1 = newError error(%0)
+    (1, %0) = %1;
+    PopScopeFrame
+    return;
+  }
+  bb2 {
+    PushScopeFrame 0
+    (1, %0) = (1, value);
+    PopScopeFrame
+    return;
+  }
+}
+$query$0() -> error|[[int, int, int, never...], never...]{
+  bb0 {
+    %1 = ConstantLoad 1
+    %2 = ConstantLoad 2
+    %3 = ConstantLoad 3
+    %4 = ConstantLoad 3
+    %5 = newArray [int, int, int, never...][%4]{%1, %2, %3}
+    %6 = ConstantLoad 1
+    %7 = newArray [[int, int, int, never...], never...][%6]{%5}
+    %0 = %7;
+    return;
+  }
+}
+$query$1(int) -> error|[boolean, never...]{
+  bb0 {
+    %3 = $desugar$0;
+    %4 = ConstantLoad 1
+    %5 = %4;
+    %2 = > %3 %5;
+    %6 = ConstantLoad 1
+    %7 = newArray [boolean, never...][%6]{%2}
+    %0 = %7;
+    return;
+  }
+}
+$query$2(int) -> error|[int, never...]{
+  bb0 {
+    %2 = $desugar$1;
+    %3 = project(%2) -> bb1;
+  }
+  bb1 {
+    %4 = ConstantLoad 1
+    %5 = newArray [int, never...][%4]{%3}
+    %0 = %5;
+    return;
+  }
+}
+$query$3() -> error|[[int, int, int, never...], never...]{
+  bb0 {
+    %1 = ConstantLoad 1
+    %2 = ConstantLoad 2
+    %3 = ConstantLoad 3
+    %4 = ConstantLoad 3
+    %5 = newArray [int, int, int, never...][%4]{%1, %2, %3}
+    %6 = ConstantLoad 1
+    %7 = newArray [[int, int, int, never...], never...][%6]{%5}
+    %0 = %7;
+    return;
+  }
+}
+$query$4(int) -> error|[[int...], never...]{
+  bb0 {
+    %2 = $desugar$2;
+    %3 = inner(%2) -> bb1;
+  }
+  bb1 {
+    %4 = ConstantLoad 1
+    %5 = newArray [[int...], never...][%4]{%3}
+    %0 = %5;
+    return;
+  }
+}
+$query$5(int,int) -> error|[int, never...]{
+  bb0 {
+    %4 = $desugar$3;
+    %5 = $desugar$4;
+    %3 = + %4 %5;
+    %6 = ConstantLoad 1
+    %7 = newArray [int, never...][%6]{%3}
+    %0 = %7;
+    return;
+  }
+}
+$query$6(int,int,int) -> error|[boolean, never...]{
+  bb0 {
+    %5 = $desugar$7;
+    %6 = ConstantLoad 3
+    %7 = %6;
+    %4 = > %5 %7;
+    %8 = ConstantLoad 1
+    %9 = newArray [boolean, never...][%8]{%4}
+    %0 = %9;
+    return;
+  }
+}
+$query$7() -> error|[2, never...]{
+  bb0 {
+    %1 = ConstantLoad 2
+    %2 = ConstantLoad 1
+    %3 = newArray [2, never...][%2]{%1}
+    %0 = %3;
+    return;
+  }
+}
+$query$8(int,int,int) -> error|[int, never...]{
+  bb0 {
+    %4 = ConstantLoad 1
+    %5 = newArray [int, never...][%4]{$desugar$10}
+    %0 = %5;
+    return;
+  }
+}
+$query$9() -> error|[[int, int, int, never...], never...]{
+  bb0 {
+    %1 = ConstantLoad 2
+    %2 = ConstantLoad 1
+    %3 = ConstantLoad 4
+    %4 = ConstantLoad 3
+    %5 = newArray [int, int, int, never...][%4]{%1, %2, %3}
+    %6 = ConstantLoad 1
+    %7 = newArray [[int, int, int, never...], never...][%6]{%5}
+    %0 = %7;
+    return;
+  }
+}
+$query$10() -> error|[[int...], never...]{
+  bb0 {
+    %1 = joinedValues() -> bb1;
+  }
+  bb1 {
+    %2 = ConstantLoad 1
+    %3 = newArray [[int...], never...][%2]{%1}
+    %0 = %3;
+    return;
+  }
+}
+$query$11(int) -> error|[int, never...]{
+  bb0 {
+    %2 = $desugar$11;
+    %3 = leftJoinKey(%2) -> bb1;
+  }
+  bb1 {
+    %4 = ConstantLoad 1
+    %5 = newArray [int, never...][%4]{%3}
+    %0 = %5;
+    return;
+  }
+}
+$query$12(int) -> error|[int, never...]{
+  bb0 {
+    %2 = $desugar$12;
+    %3 = rightJoinKey(%2) -> bb1;
+  }
+  bb1 {
+    %4 = ConstantLoad 1
+    %5 = newArray [int, never...][%4]{%3}
+    %0 = %5;
+    return;
+  }
+}
+$query$13(int,int) -> error|[int, never...]{
+  bb0 {
+    %3 = ConstantLoad 1
+    %4 = newArray [int, never...][%3]{$desugar$14}
+    %0 = %4;
+    return;
+  }
+}
+$query$14(int,int) -> error|[int, never...]{
+  bb0 {
+    %4 = $desugar$15;
+    %5 = $desugar$16;
+    %3 = + %4 %5;
+    %6 = ConstantLoad 1
+    %7 = newArray [int, never...][%6]{%3}
+    %0 = %7;
+    return;
+  }
+}
+$query$15() -> error|[[int, int, never...], never...]{
+  bb0 {
+    %1 = ConstantLoad 1
+    %2 = ConstantLoad 2
+    %3 = ConstantLoad 2
+    %4 = newArray [int, int, never...][%3]{%1, %2}
+    %5 = ConstantLoad 1
+    %6 = newArray [[int, int, never...], never...][%5]{%4}
+    %0 = %6;
+    return;
+  }
+}
+$query$16() -> error|[[int, never...], never...]{
+  bb0 {
+    %1 = ConstantLoad 1
+    %2 = ConstantLoad 1
+    %3 = newArray [int, never...][%2]{%1}
+    %4 = ConstantLoad 1
+    %5 = newArray [[int, never...], never...][%4]{%3}
+    %0 = %5;
+    return;
+  }
+}
+$query$17(int) -> error|[int, never...]{
+  bb0 {
+    %2 = ConstantLoad 1
+    %3 = newArray [int, never...][%2]{$desugar$17}
+    %0 = %3;
+    return;
+  }
+}
+$query$18(nil|int) -> error|[nil|int, never...]{
+  bb0 {
+    %2 = ConstantLoad 1
+    %3 = newArray [nil|int, never...][%2]{$desugar$18}
+    %0 = %3;
+    return;
+  }
+}
+$query$19(int,nil|int) -> error|[boolean, never...]{
+  bb0 {
+    %3 = $desugar$20 is nil
+    %4 = ConstantLoad 1
+    %5 = newArray [boolean, never...][%4]{%3}
+    %0 = %5;
+    return;
+  }
+}
+$query$20() -> error|[[int, int, int, int, never...], never...]{
+  bb0 {
+    %1 = ConstantLoad 1
+    %2 = ConstantLoad 2
+    %3 = ConstantLoad 3
+    %4 = ConstantLoad 4
+    %5 = ConstantLoad 4
+    %6 = newArray [int, int, int, int, never...][%5]{%1, %2, %3, %4}
+    %7 = ConstantLoad 1
+    %8 = newArray [[int, int, int, int, never...], never...][%7]{%6}
+    %0 = %8;
+    return;
+  }
+}
+$query$21(int) -> error|[boolean, never...]{
+  bb0 {
+    %2 = $desugar$21;
+    %3 = groupKey(%2) -> bb1;
+  }
+  bb1 {
+    %4 = ConstantLoad 1
+    %5 = newArray [boolean, never...][%4]{%3}
+    %0 = %5;
+    return;
+  }
+}
+$query$22([int, int...]) -> error|[[int...], never...]{
+  bb0 {
+    %2 = ConstantLoad 0
+    %3 = newArray [int...][%2]{}
+    $desugar$0 = %3;
+    $desugar$1 = $desugar$22;
+    %6 = length($desugar$1) -> bb1;
+  }
+  bb1 {
+    $desugar$2 = %6;
+    %8 = ConstantLoad 0
+    $desugar$3 = %8;
+    GOTO bb2;
+  }
+  bb2 {
+    %11 = $desugar$3;
+    %12 = $desugar$2;
+    %10 = < %11 %12;
+    %10 ? bb3 : bb4;
+  }
+  bb3 {
+    PushScopeFrame 7
+    %0 = (1, $desugar$1)[(1, $desugar$3)];
+    %1 = %0;
+    %2 = push((1, $desugar$0),%1) -> bb5;
+  }
+  bb4 {
+    %13 = ConstantLoad 1
+    %14 = newArray [[int...], never...][%13]{$desugar$0}
+    %0 = %14;
+    return;
+  }
+  bb5 {
+    %4 = (1, $desugar$3);
+    %5 = ConstantLoad 1
+    %6 = %5;
+    %3 = + %4 %6;
+    (1, $desugar$3) = %3;
+    PopScopeFrame
+    GOTO bb2;
+  }
+}
+$query$23() -> error|[[int, int, never...], never...]{
+  bb0 {
+    %1 = ConstantLoad 0
+    %2 = ConstantLoad 1
+    %3 = ConstantLoad 2
+    %4 = newArray [int, int, never...][%3]{%1, %2}
+    %5 = ConstantLoad 1
+    %6 = newArray [[int, int, never...], never...][%5]{%4}
+    %0 = %6;
+    return;
+  }
+}
+$query$24(int) -> error|[int, never...]{
+  bb0 {
+    %2 = $desugar$23;
+    %3 = checkedValue(%2) -> bb1;
+  }
+  bb1 {
+    $desugar$0 = %3;
+    %5 = $desugar$0 is error
+    %5 ? bb2 : bb3;
+  }
+  bb2 {
+    PushScopeFrame 0
+    (1, %0) = (1, $desugar$0);
+    PopScopeFrame
+    return;
+  }
+  bb3 {
+    %6 = ConstantLoad 1
+    %7 = newArray [int, never...][%6]{$desugar$0}
+    %0 = %7;
+    return;
+  }
+}
+$query$25() -> error|[[int...], never...]{
+  bb0 {
+    %1 = limitedValues() -> bb1;
+  }
+  bb1 {
+    %2 = ConstantLoad 1
+    %3 = newArray [[int...], never...][%2]{%1}
+    %0 = %3;
+    return;
+  }
+}
+$query$26() -> error|[int, never...]{
+  bb0 {
+    %1 = queryLimit() -> bb1;
+  }
+  bb1 {
+    %2 = ConstantLoad 1
+    %3 = newArray [int, never...][%2]{%1}
+    %0 = %3;
+    return;
+  }
+}
+$query$27(int) -> error|[int, never...]{
+  bb0 {
+    %2 = ConstantLoad 1
+    %3 = newArray [int, never...][%2]{$desugar$24}
+    %0 = %3;
+    return;
+  }
+}
+main() -> nil{
+  bb0 {
+    %1 = fp $anon/.:$query$0
+    %2 = fp $anon/.:$query$1
+    %3 = fp $anon/.:$query$2
+    %4 = newQueryStream stream clauses=3
+    projected = %4;
+    %6 = println(projections) -> bb1;
+  }
+  bb1 {
+    %7 = streamNext projected
+    %8 = println(%7) -> bb2;
+  }
+  bb2 {
+    %9 = println(projections) -> bb3;
+  }
+  bb3 {
+    %10 = streamNext projected
+    %11 = println(%10) -> bb4;
+  }
+  bb4 {
+    %12 = println(projections) -> bb5;
+  }
+  bb5 {
+    %13 = streamNext projected
+    %14 = println(%13) -> bb6;
+  }
+  bb6 {
+    %15 = fp $anon/.:$query$3
+    %16 = fp $anon/.:$query$4
+    %17 = fp $anon/.:$query$5
+    %18 = fp $anon/.:$query$6
+    %19 = fp $anon/.:$query$7
+    %20 = fp $anon/.:$query$8
+    %21 = newQueryStream stream clauses=6
+    nested = %21;
+    %23 = println(innerCollections) -> bb7;
+  }
+  bb7 {
+    %24 = streamNext nested
+    %25 = println(%24) -> bb8;
+  }
+  bb8 {
+    %26 = println(innerCollections) -> bb9;
+  }
+  bb9 {
+    %27 = streamNext nested
+    %28 = println(%27) -> bb10;
+  }
+  bb10 {
+    %29 = println(innerCollections) -> bb11;
+  }
+  bb11 {
+    %30 = streamNext nested
+    %31 = println(%30) -> bb12;
+  }
+  bb12 {
+    %32 = println(innerCollections) -> bb13;
+  }
+  bb13 {
+    %33 = fp $anon/.:$query$9
+    %34 = fp $anon/.:$query$10
+    %35 = fp $anon/.:$query$11
+    %36 = fp $anon/.:$query$12
+    %37 = fp $anon/.:$query$13
+    %38 = fp $anon/.:$query$14
+    %39 = newQueryStream stream clauses=4
+    joined = %39;
+    %41 = println(joinCollections) -> bb14;
+  }
+  bb14 {
+    %42 = streamNext joined
+    %43 = println(%42) -> bb15;
+  }
+  bb15 {
+    %44 = println(joinCollections) -> bb16;
+  }
+  bb16 {
+    %45 = println(leftJoinKeys) -> bb17;
+  }
+  bb17 {
+    %46 = println(rightJoinKeys) -> bb18;
+  }
+  bb18 {
+    %47 = streamNext joined
+    %48 = println(%47) -> bb19;
+  }
+  bb19 {
+    %49 = streamNext joined
+    %50 = println(%49) -> bb20;
+  }
+  bb20 {
+    %51 = fp $anon/.:$query$15
+    %52 = fp $anon/.:$query$16
+    %53 = fp $anon/.:$query$17
+    %54 = fp $anon/.:$query$18
+    %55 = fp $anon/.:$query$19
+    %56 = newQueryStream stream clauses=3
+    outerJoined = %56;
+    %58 = streamNext outerJoined
+    %59 = println(%58) -> bb21;
+  }
+  bb21 {
+    %60 = streamNext outerJoined
+    %61 = println(%60) -> bb22;
+  }
+  bb22 {
+    %62 = streamNext outerJoined
+    %63 = println(%62) -> bb23;
+  }
+  bb23 {
+    %64 = fp $anon/.:$query$20
+    %65 = fp $anon/.:$query$21
+    %66 = fp $anon/.:$query$22
+    %67 = newQueryStream stream clauses=3
+    grouped = %67;
+    %69 = println(groupKeys) -> bb24;
+  }
+  bb24 {
+    %70 = streamNext grouped
+    %71 = println(%70) -> bb25;
+  }
+  bb25 {
+    %72 = println(groupKeys) -> bb26;
+  }
+  bb26 {
+    %73 = streamNext grouped
+    %74 = println(%73) -> bb27;
+  }
+  bb27 {
+    %75 = streamNext grouped
+    %76 = println(%75) -> bb28;
+  }
+  bb28 {
+    %77 = fp $anon/.:$query$23
+    %78 = fp $anon/.:$query$24
+    %79 = newQueryStream stream clauses=2
+    checked = %79;
+    %81 = streamNext checked
+    %82 = println(%81) -> bb29;
+  }
+  bb29 {
+    %83 = streamNext checked
+    %84 = println(%83) -> bb30;
+  }
+  bb30 {
+    %85 = streamNext checked
+    %86 = println(%85) -> bb31;
+  }
+  bb31 {
+    %87 = fp $anon/.:$query$25
+    %88 = fp $anon/.:$query$26
+    %89 = fp $anon/.:$query$27
+    %90 = newQueryStream stream clauses=3
+    limited = %90;
+    %92 = println(limitEvents) -> bb32;
+  }
+  bb32 {
+    %93 = streamNext limited
+    %94 = println(%93) -> bb33;
+  }
+  bb33 {
+    %95 = println(limitEvents) -> bb34;
+  }
+  bb34 {
+    %96 = streamNext limited
+    %97 = println(%96) -> bb35;
+  }
+  bb35 {
+    return;
+  }
+}

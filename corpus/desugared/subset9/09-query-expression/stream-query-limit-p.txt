@@ -1,0 +1,14 @@
+(package
+  (function main () (
+    (value-type null))
+    (block-function-body
+      (var-def
+        (variable values (type
+          (stream-type
+            (value-type int)
+            (value-type null))) (expr
+          (lazy-query-expr 0:1:0:0:0 6:1:0:0:0 7:1:0:0:0))))
+      (assignment
+        (wildcard-binding-pattern)
+        (invocation next expr:
+          (simple-var-ref values) ())))))

@@ -103,6 +103,9 @@ func walkExpression(cx *functionContext, node ast.BLangActionOrExpression) desug
 	case *BLangServiceInit:
 		// Desugar-introduced node; nothing to rewrite further.
 		return desugaredNode[ast.BLangActionOrExpression]{replacementNode: expr}
+	case *BLangLazyQueryExpr:
+		// Desugar-introduced node; evaluator closures are already fully lowered.
+		return desugaredNode[ast.BLangActionOrExpression]{replacementNode: expr}
 	case *ast.BLangNamedArgsExpression:
 		result := walkExpression(cx, expr.Expr)
 		expr.Expr = result.replacementNode.(ast.BLangExpression)

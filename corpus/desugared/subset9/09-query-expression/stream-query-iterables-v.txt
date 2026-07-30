@@ -1,0 +1,403 @@
+(package
+  (import-package ballerina io (as io))
+  (class-definition public RangeIterator
+    (variable nextValue (type
+      (value-type int)))
+    (function init () ()
+      (block-function-body
+        (assignment
+          (index-based-access
+            (simple-var-ref self)
+            (literal nextValue))
+          (literal 1))))
+    (function next () (
+      (union-type
+        (record-type
+          (field value
+            (value-type int)))
+        (value-type null)))
+      (block-function-body
+        (if
+          (binary-expr >
+            (index-based-access
+              (simple-var-ref self)
+              (literal nextValue))
+            (literal 3))
+          (block-stmt
+            (return
+              (literal <nil>))) ())
+        (block-stmt
+          (var-def
+            (variable value (type
+              (value-type int)) (expr
+              (index-based-access
+                (simple-var-ref self)
+                (literal nextValue)))))
+          (compound-assignment +
+            (index-based-access
+              (simple-var-ref self)
+              (literal nextValue))
+            (literal 1))
+          (return
+            (mapping-constructor-expr
+              (key-value
+                (literal value)
+                (simple-var-ref value))))))))
+  (class-definition RangeIterable
+    (variable iteratorValue (type
+      (user-defined-type RangeIterator)))
+    (function init (
+      (variable iteratorValue (type
+        (user-defined-type RangeIterator)))) (
+      (value-type null))
+      (block-function-body
+        (assignment
+          (index-based-access
+            (simple-var-ref self)
+            (literal iteratorValue))
+          (simple-var-ref iteratorValue))))
+    (function iterator () (
+      (user-defined-type RangeIterator))
+      (block-function-body
+        (return
+          (index-based-access
+            (simple-var-ref self)
+            (literal iteratorValue))))))
+  (class-definition public FailingStreamIterator
+    (variable nextValue (type
+      (value-type int)))
+    (variable closeCount (type
+      (value-type int)))
+    (function init () ()
+      (block-function-body
+        (assignment
+          (index-based-access
+            (simple-var-ref self)
+            (literal nextValue))
+          (literal 1))
+        (assignment
+          (index-based-access
+            (simple-var-ref self)
+            (literal closeCount))
+          (literal 0))))
+    (function close () (
+      (value-type null))
+      (block-function-body
+        (compound-assignment +
+          (index-based-access
+            (simple-var-ref self)
+            (literal closeCount))
+          (literal 1))))
+    (function next () (
+      (union-type
+        (record-type
+          (field value
+            (value-type int)))
+        (union-type
+          (error-type)
+          (value-type null))))
+      (block-function-body
+        (if
+          (binary-expr >
+            (index-based-access
+              (simple-var-ref self)
+              (literal nextValue))
+            (literal 2))
+          (block-stmt
+            (return
+              (error-constructor-expr (
+                (literal source completion))))) ())
+        (block-stmt
+          (var-def
+            (variable value (type
+              (value-type int)) (expr
+              (index-based-access
+                (simple-var-ref self)
+                (literal nextValue)))))
+          (compound-assignment +
+            (index-based-access
+              (simple-var-ref self)
+              (literal nextValue))
+            (literal 1))
+          (return
+            (mapping-constructor-expr
+              (key-value
+                (literal value)
+                (simple-var-ref value))))))))
+  (class-definition public TrackedStreamIterator
+    (variable nextValue (type
+      (value-type int)))
+    (variable closeCount (type
+      (value-type int)))
+    (function init () ()
+      (block-function-body
+        (assignment
+          (index-based-access
+            (simple-var-ref self)
+            (literal nextValue))
+          (literal 1))
+        (assignment
+          (index-based-access
+            (simple-var-ref self)
+            (literal closeCount))
+          (literal 0))))
+    (function close () (
+      (value-type null))
+      (block-function-body
+        (compound-assignment +
+          (index-based-access
+            (simple-var-ref self)
+            (literal closeCount))
+          (literal 1))))
+    (function next () (
+      (union-type
+        (record-type
+          (field value
+            (value-type int)))
+        (value-type null)))
+      (block-function-body
+        (if
+          (binary-expr >
+            (index-based-access
+              (simple-var-ref self)
+              (literal nextValue))
+            (literal 3))
+          (block-stmt
+            (return
+              (literal <nil>))) ())
+        (block-stmt
+          (var-def
+            (variable value (type
+              (value-type int)) (expr
+              (index-based-access
+                (simple-var-ref self)
+                (literal nextValue)))))
+          (compound-assignment +
+            (index-based-access
+              (simple-var-ref self)
+              (literal nextValue))
+            (literal 1))
+          (return
+            (mapping-constructor-expr
+              (key-value
+                (literal value)
+                (simple-var-ref value))))))))
+  (function main () (
+    (value-type null))
+    (block-function-body
+      (var-def
+        (variable listValues (type
+          (stream-type
+            (value-type int)
+            (value-type null))) (expr
+          (lazy-query-expr 0:1:0:0:0 7:1:0:0:0))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref listValues) ()))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref listValues) ()))))
+      (var-def
+        (variable numbers (type
+          (constrained-type
+            (builtin-ref-type map)
+            (value-type int))) (expr
+          (mapping-constructor-expr
+            (key-value
+              (literal one)
+              (literal 1))
+            (key-value
+              (literal two)
+              (literal 2))))))
+      (var-def
+        (variable mapValues (type
+          (stream-type
+            (value-type int)
+            (value-type null))) (expr
+          (lazy-query-expr 0:1:0:0:0 7:1:0:0:0))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref mapValues) ()))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref mapValues) ()))))
+      (var-def
+        (variable characters (type
+          (stream-type
+            (value-type string)
+            (value-type null))) (expr
+          (lazy-query-expr 0:1:0:0:0 7:1:0:0:0))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref characters) ()))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref characters) ()))))
+      (var-def
+        (variable xmlItems (type
+          (stream-type
+            (value-type xml)
+            (value-type null))) (expr
+          (lazy-query-expr 0:1:0:0:0 7:1:0:0:0))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref xmlItems) ()))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref xmlItems) ()))))
+      (var-def
+        (variable objectIterator (type
+          (user-defined-type RangeIterator)) (expr
+          (new ()))))
+      (var-def
+        (variable objectValues (type
+          (stream-type
+            (value-type int)
+            (value-type null))) (expr
+          (lazy-query-expr 0:1:0:0:0 6:1:0:0:0 7:1:0:0:0))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref objectValues) ()))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref objectValues) ()))))
+      (expression-stmt
+        (invocation io println (
+          (index-based-access
+            (simple-var-ref objectIterator)
+            (literal nextValue)))))
+      (assignment
+        (wildcard-binding-pattern)
+        (invocation close expr:
+          (simple-var-ref objectValues) ()))
+      (var-def
+        (variable trackedIterator (type
+          (user-defined-type TrackedStreamIterator)) (expr
+          (new ()))))
+      (var-def
+        (variable trackedStream (expr
+          (new
+            (stream-type
+              (value-type int)
+              (value-type null)) (
+            (simple-var-ref trackedIterator))))))
+      (var-def
+        (variable limitedStreamValues (type
+          (stream-type
+            (value-type int)
+            (value-type null))) (expr
+          (lazy-query-expr 0:1:0:0:0 6:1:0:0:0 7:1:0:0:0))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref limitedStreamValues) ()))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref limitedStreamValues) ()))))
+      (expression-stmt
+        (invocation io println (
+          (index-based-access
+            (simple-var-ref trackedIterator)
+            (literal nextValue)))))
+      (expression-stmt
+        (invocation io println (
+          (index-based-access
+            (simple-var-ref trackedIterator)
+            (literal closeCount)))))
+      (assignment
+        (wildcard-binding-pattern)
+        (invocation close expr:
+          (simple-var-ref limitedStreamValues) ()))
+      (expression-stmt
+        (invocation io println (
+          (index-based-access
+            (simple-var-ref trackedIterator)
+            (literal closeCount)))))
+      (var-def
+        (variable sourceIterator (type
+          (user-defined-type FailingStreamIterator)) (expr
+          (new ()))))
+      (var-def
+        (variable sourceStream (expr
+          (new
+            (stream-type
+              (value-type int)
+              (union-type
+                (error-type)
+                (value-type null))) (
+            (simple-var-ref sourceIterator))))))
+      (var-def
+        (variable sourceValues (type
+          (stream-type
+            (value-type int)
+            (union-type
+              (error-type)
+              (value-type null)))) (expr
+          (lazy-query-expr 0:1:0:0:0 7:1:0:0:0))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref sourceValues) ()))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref sourceValues) ()))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref sourceValues) ()))))
+      (expression-stmt
+        (invocation io println (
+          (index-based-access
+            (simple-var-ref sourceIterator)
+            (literal closeCount)))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref sourceValues) ()))))
+      (expression-stmt
+        (invocation io println (
+          (index-based-access
+            (simple-var-ref sourceIterator)
+            (literal closeCount)))))
+      (var-def
+        (variable joinIterator (type
+          (user-defined-type FailingStreamIterator)) (expr
+          (new ()))))
+      (var-def
+        (variable joinStream (expr
+          (new
+            (stream-type
+              (value-type int)
+              (union-type
+                (error-type)
+                (value-type null))) (
+            (simple-var-ref joinIterator))))))
+      (var-def
+        (variable joinedValues (type
+          (stream-type
+            (value-type int)
+            (union-type
+              (error-type)
+              (value-type null)))) (expr
+          (lazy-query-expr 0:1:0:0:0 3:3:1:0:0 7:1:0:0:0))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref joinedValues) ()))))
+      (expression-stmt
+        (invocation io println (
+          (index-based-access
+            (simple-var-ref joinIterator)
+            (literal closeCount))))))))

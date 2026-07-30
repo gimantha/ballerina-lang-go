@@ -37,6 +37,45 @@ type queryStage interface {
 	close() values.BalValue
 }
 
+type queryPipeline struct {
+	stage          queryStage
+	closed         bool
+	terminalResult queryPullResult
+}
+
+func newQueryPipeline(stage queryStage) *queryPipeline {
+	return &queryPipeline{stage: stage}
+}
+
+func (p *queryPipeline) pull() queryPullResult {
+	if p.closed {
+		return p.terminalResult
+	}
+	result := p.stage.pull()
+	if !result.terminal {
+		return result
+	}
+	closeCompletion := p.close()
+	if result.completion == nil {
+		result.completion = closeCompletion
+	}
+	p.terminalResult = result
+	return result
+}
+
+func (p *queryPipeline) close() values.BalValue {
+	if p.closed {
+		return p.terminalResult.completion
+	}
+	p.closed = true
+	completion := p.stage.close()
+	p.terminalResult = queryPullResult{
+		completion: completion,
+		terminal:   true,
+	}
+	return completion
+}
+
 type queryIterator interface {
 	pull() (values.BalValue, values.BalValue, bool, bool)
 	close() values.BalValue
@@ -91,7 +130,8 @@ func (s *queryFromStage) pull() queryPullResult {
 	}
 	for {
 		if s.currentIterator != nil {
-			value, completion, hasValue, terminal := s.currentIterator.pull()
+			iterator := s.currentIterator
+			value, completion, hasValue, terminal := iterator.pull()
 			if hasValue {
 				row := make(queryRow, len(s.currentRow), len(s.currentRow)+1)
 				copy(row, s.currentRow)
@@ -99,6 +139,12 @@ func (s *queryFromStage) pull() queryPullResult {
 				return queryPullResult{row: row, hasRow: true}
 			}
 			s.currentIterator = nil
+			if terminal {
+				closeCompletion := iterator.close()
+				if completion == nil {
+					completion = closeCompletion
+				}
+			}
 			if !terminal {
 				return queryPullResult{completion: completion}
 			}
@@ -111,6 +157,10 @@ func (s *queryFromStage) pull() queryPullResult {
 		if !upstreamResult.hasRow {
 			if !upstreamResult.terminal {
 				return upstreamResult
+			}
+			closeCompletion := s.upstream.close()
+			if upstreamResult.completion == nil {
+				upstreamResult.completion = closeCompletion
 			}
 			return s.finish(upstreamResult.completion)
 		}
@@ -126,9 +176,6 @@ func (s *queryFromStage) finish(completion values.BalValue) queryPullResult {
 }
 
 func (s *queryFromStage) close() values.BalValue {
-	if s.done {
-		return nil
-	}
 	s.done = true
 	if s.currentIterator != nil {
 		if completion := s.currentIterator.close(); completion != nil {
@@ -230,29 +277,38 @@ func (s *queryMapStage) close() values.BalValue {
 type queryJoinStage struct {
 	upstream            queryStage
 	iteratorFactory     queryIteratorFactory
-	predicate           queryEvaluator
+	leftKeyEvaluator    queryEvaluator
+	rightKeyEvaluator   queryEvaluator
 	outer               bool
 	currentIterator     queryIterator
 	currentRow          queryRow
 	currentMatched      bool
 	currentOuterEmitted bool
-	rightValues         []values.BalValue
+	rightValues         []queryJoinValue
+	rightIterator       queryIterator
 	rightInitialized    bool
 	completion          values.BalValue
 	done                bool
 }
 
+type queryJoinValue struct {
+	value values.BalValue
+	key   values.BalValue
+}
+
 func newQueryJoinStage(
 	upstream queryStage,
 	iteratorFactory queryIteratorFactory,
-	predicate queryEvaluator,
+	leftKeyEvaluator queryEvaluator,
+	rightKeyEvaluator queryEvaluator,
 	outer bool,
 ) *queryJoinStage {
 	return &queryJoinStage{
-		upstream:        upstream,
-		iteratorFactory: iteratorFactory,
-		predicate:       predicate,
-		outer:           outer,
+		upstream:          upstream,
+		iteratorFactory:   iteratorFactory,
+		leftKeyEvaluator:  leftKeyEvaluator,
+		rightKeyEvaluator: rightKeyEvaluator,
+		outer:             outer,
 	}
 }
 
@@ -260,30 +316,27 @@ func (s *queryJoinStage) pull() queryPullResult {
 	if s.done {
 		return queryPullResult{completion: s.completion, terminal: true}
 	}
+	if !s.rightInitialized {
+		result := s.initializeRight()
+		if result.completion != nil || result.terminal {
+			if result.terminal {
+				return s.finish(result.completion)
+			}
+			return result
+		}
+	}
 	for {
 		if s.currentIterator != nil {
-			value, completion, hasValue, terminal := s.currentIterator.pull()
+			joinValue, _, hasValue, _ := s.currentIterator.pull()
 			if hasValue {
+				value := joinValue.(queryJoinValue)
 				row := make(queryRow, len(s.currentRow), len(s.currentRow)+1)
 				copy(row, s.currentRow)
-				row = append(row, value)
-				predicateResult := s.predicate(row)
-				if predicateResult.completion != nil {
-					return queryPullResult{completion: predicateResult.completion}
-				}
-				if predicateResult.value.(bool) {
-					s.currentMatched = true
-					return queryPullResult{row: row, hasRow: true}
-				}
-				continue
+				row = append(row, value.value)
+				s.currentMatched = true
+				return queryPullResult{row: row, hasRow: true}
 			}
 			s.currentIterator = nil
-			if !terminal {
-				return queryPullResult{completion: completion}
-			}
-			if completion != nil {
-				return s.finish(completion)
-			}
 			if s.outer && !s.currentMatched && !s.currentOuterEmitted {
 				s.currentOuterEmitted = true
 				row := make(queryRow, len(s.currentRow), len(s.currentRow)+1)
@@ -298,35 +351,60 @@ func (s *queryJoinStage) pull() queryPullResult {
 			if !upstreamResult.terminal {
 				return upstreamResult
 			}
+			closeCompletion := s.upstream.close()
+			if upstreamResult.completion == nil {
+				upstreamResult.completion = closeCompletion
+			}
 			return s.finish(upstreamResult.completion)
 		}
 		s.currentRow = upstreamResult.row
 		s.currentMatched = false
 		s.currentOuterEmitted = false
-		if !s.rightInitialized {
-			completion, terminal := s.initializeRight(s.currentRow)
-			if completion != nil {
-				if terminal {
-					return s.finish(completion)
-				}
-				return queryPullResult{completion: completion}
+		leftKeyResult := s.leftKeyEvaluator(s.currentRow)
+		if leftKeyResult.completion != nil {
+			return queryPullResult{completion: leftKeyResult.completion}
+		}
+		matches := make([]values.BalValue, 0)
+		for _, rightValue := range s.rightValues {
+			if values.DeepEquals(leftKeyResult.value, rightValue.key) {
+				matches = append(matches, rightValue)
 			}
 		}
-		s.currentIterator = &queryValuesIterator{values: s.rightValues}
+		s.currentIterator = &queryValuesIterator{values: matches}
 	}
 }
 
-func (s *queryJoinStage) initializeRight(row queryRow) (values.BalValue, bool) {
-	iterator := s.iteratorFactory(row)
+func (s *queryJoinStage) initializeRight() queryPullResult {
+	if s.rightIterator == nil {
+		s.rightIterator = s.iteratorFactory(nil)
+	}
 	for {
-		value, completion, hasValue, terminal := iterator.pull()
+		value, completion, hasValue, terminal := s.rightIterator.pull()
 		if !hasValue {
 			if terminal {
+				closeCompletion := s.rightIterator.close()
+				s.rightIterator = nil
+				if completion == nil {
+					completion = closeCompletion
+				}
 				s.rightInitialized = completion == nil
+			} else {
+				s.rightIterator = nil
+				s.rightInitialized = true
 			}
-			return completion, terminal
+			return queryPullResult{
+				completion: completion,
+				terminal:   terminal && completion != nil,
+			}
 		}
-		s.rightValues = append(s.rightValues, value)
+		keyResult := s.rightKeyEvaluator(queryRow{value})
+		if keyResult.completion != nil {
+			return queryPullResult{completion: keyResult.completion}
+		}
+		s.rightValues = append(s.rightValues, queryJoinValue{
+			value: value,
+			key:   keyResult.value,
+		})
 	}
 }
 
@@ -337,10 +415,13 @@ func (s *queryJoinStage) finish(completion values.BalValue) queryPullResult {
 }
 
 func (s *queryJoinStage) close() values.BalValue {
-	if s.done {
-		return nil
-	}
 	s.done = true
+	if s.rightIterator != nil {
+		if completion := s.rightIterator.close(); completion != nil {
+			_ = s.upstream.close()
+			return completion
+		}
+	}
 	if s.currentIterator != nil {
 		if completion := s.currentIterator.close(); completion != nil {
 			_ = s.upstream.close()
@@ -671,26 +752,19 @@ func (s *queryLimitStage) pull() queryPullResult {
 		return queryPullResult{completion: s.completion, terminal: true}
 	}
 	if !s.initialized {
-		result := s.upstream.pull()
-		if !result.hasRow {
-			if result.terminal {
-				s.done = true
-				s.completion = result.completion
-			}
-			return result
-		}
-		evalResult := s.evaluator(result.row)
+		evalResult := s.evaluator(nil)
 		if evalResult.completion != nil {
 			return queryPullResult{completion: evalResult.completion}
 		}
 		s.initialized = true
-		s.limit = max(evalResult.value.(int64), 0)
+		s.limit = evalResult.value.(int64)
+		if s.limit < 0 {
+			panic(values.NewErrorWithMessage("limit cannot be negative"))
+		}
 		if s.limit == 0 {
 			s.done = true
 			return queryPullResult{terminal: true}
 		}
-		s.count = 1
-		return result
 	}
 	if s.count >= s.limit {
 		s.done = true
