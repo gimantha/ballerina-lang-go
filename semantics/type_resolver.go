@@ -4031,7 +4031,11 @@ func resolveQueryExpr(
 		return semtypes.SemType{}, expressionEffect{}, false
 	}
 
-	streamQuery := expr.QueryConstructType == ast.TypeKind_STREAM
+	queryConstructType := expr.QueryConstructType
+	if selectClause != nil {
+		queryConstructType = queryExpressionConstructType(t.typeContext(), expr, expectedType)
+	}
+	streamQuery := queryConstructType == ast.TypeKind_STREAM
 	queryResolver := t
 	var checkedErrorResolver *queryCheckedErrorResolver
 	if streamQuery {
@@ -4059,14 +4063,14 @@ func resolveQueryExpr(
 		selectExpectedTy := querySelectExpectedType(
 			t.typeContext(),
 			t.typeEnv(),
-			expr.QueryConstructType,
+			queryConstructType,
 			expectedType,
 		)
 		selectTy, _, ok := resolveActionOrExpression(queryResolver, queryChain, selectClause.Expression, selectExpectedTy)
 		if !ok {
 			return semtypes.SemType{}, expressionEffect{}, false
 		}
-		switch expr.QueryConstructType {
+		switch queryConstructType {
 		case ast.TypeKind_NONE:
 			ld := semtypes.NewListDefinition()
 			queryTy = ld.DefineListTypeWrappedWithEnvSemType(t.typeEnv(), selectTy)
@@ -4140,6 +4144,24 @@ func resolveQueryExpr(
 	}
 	setExpectedType(expr, queryTy)
 	return queryTy, defaultExpressionEffect(chain), true
+}
+
+func queryExpressionConstructType(
+	ctx semtypes.Context,
+	expr *ast.BLangQueryExpr,
+	expectedType semtypes.SemType,
+) ast.TypeKind {
+	if expr.QueryConstructType != ast.TypeKind_NONE {
+		return expr.QueryConstructType
+	}
+	if !semtypes.IsZero(expectedType) && semtypes.IsSubtype(ctx, expectedType, semtypes.STREAM) {
+		return ast.TypeKind_STREAM
+	}
+	determinedType := expr.GetDeterminedType()
+	if !semtypes.IsZero(determinedType) && semtypes.IsSubtype(ctx, determinedType, semtypes.STREAM) {
+		return ast.TypeKind_STREAM
+	}
+	return ast.TypeKind_NONE
 }
 
 type queryCheckedErrorResolver struct {

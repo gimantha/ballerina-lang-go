@@ -1,0 +1,364 @@
+module $anon.. v 0.0.0;
+argumentEvaluations  int;
+assignmentEvaluations  int;
+returnEvaluations  int;
+class FailingIterator {
+  nextValue int
+
+  init() -> nil{
+    bb0 {
+      %2 = ConstantLoad 1
+      %3 = ConstantLoad nextValue
+      self[%3] = %2;
+      return;
+    }
+  }
+
+  next() -> nil|error|{| value: int, never... |}{
+    bb0 {
+      %4 = ConstantLoad nextValue
+      %3 = self[%4];
+      %5 = %3;
+      %6 = ConstantLoad 1
+      %7 = %6;
+      %2 = > %5 %7;
+      %2 ? bb1 : bb2;
+    }
+    bb1 {
+      PushScopeFrame 2
+      %0 = ConstantLoad source completion
+      %1 = newError error(%0)
+      (1, %0) = %1;
+      PopScopeFrame
+      return;
+    }
+    bb2 {
+      PushScopeFrame 11
+      %1 = ConstantLoad nextValue
+      %0 = (1, self)[%1];
+      value = %0;
+      %3 = ConstantLoad nextValue
+      %4 = (1, self)[%3];
+      %5 = %4;
+      %6 = ConstantLoad 1
+      %7 = %6;
+      %8 = + %5 %7;
+      (1, self)[%3] = %8;
+      %9 = ConstantLoad value
+      %10 = newMap {| value: int, never... |}{%9=value}
+      (1, %0) = %10;
+      PopScopeFrame
+      return;
+    }
+  }
+}
+assignmentValue(int) -> int{
+  bb0 {
+    %3 = ConstantLoad 1
+    %4 = %3;
+    %2 = + assignmentEvaluations %4;
+    assignmentEvaluations = %2;
+    %6 = value;
+    %7 = ConstantLoad 10
+    %8 = %7;
+    %5 = * %6 %8;
+    %0 = %5;
+    return;
+  }
+}
+returnValue(int) -> int{
+  bb0 {
+    %3 = ConstantLoad 1
+    %4 = %3;
+    %2 = + returnEvaluations %4;
+    returnEvaluations = %2;
+    %6 = value;
+    %7 = ConstantLoad 10
+    %8 = %7;
+    %5 = * %6 %8;
+    %0 = %5;
+    return;
+  }
+}
+argumentValue(int) -> int{
+  bb0 {
+    %3 = ConstantLoad 1
+    %4 = %3;
+    %2 = + argumentEvaluations %4;
+    argumentEvaluations = %2;
+    %6 = value;
+    %7 = ConstantLoad 10
+    %8 = %7;
+    %5 = * %6 %8;
+    %0 = %5;
+    return;
+  }
+}
+$query$22$1127$1185$0() -> error|[[int, int, never...], never...]{
+  bb0 {
+    %1 = ConstantLoad 3
+    %2 = ConstantLoad 4
+    %3 = ConstantLoad 2
+    %4 = newArray [int, int, never...][%3]{%1, %2}
+    %5 = ConstantLoad 1
+    %6 = newArray [[int, int, never...], never...][%5]{%4}
+    %0 = %6;
+    return;
+  }
+}
+$query$22$1127$1185$1(int) -> error|[int, never...]{
+  bb0 {
+    %2 = $desugar$0;
+    %3 = returnValue(%2) -> bb1;
+  }
+  bb1 {
+    %4 = ConstantLoad 1
+    %5 = newArray [int, never...][%4]{%3}
+    %0 = %5;
+    return;
+  }
+}
+contextualStream() -> stream{
+  bb0 {
+    %1 = fp $anon/.:$query$22$1127$1185$0
+    %2 = fp $anon/.:$query$22$1127$1185$1
+    %3 = newQueryStream stream clauses=2
+    %0 = %3;
+    return;
+  }
+}
+consumeStream(stream) -> nil|{| value: int, never... |}{
+  bb0 {
+    %2 = streamNext values
+    %0 = %2;
+    return;
+  }
+}
+checkedValue(int) -> int|error{
+  bb0 {
+    %3 = value;
+    %4 = ConstantLoad 0
+    %5 = %4;
+    %2 = == %3 %5;
+    %2 ? bb1 : bb2;
+  }
+  bb1 {
+    PushScopeFrame 2
+    %0 = ConstantLoad checked completion
+    %1 = newError error(%0)
+    (1, %0) = %1;
+    PopScopeFrame
+    return;
+  }
+  bb2 {
+    PushScopeFrame 0
+    (1, %0) = (1, value);
+    PopScopeFrame
+    return;
+  }
+}
+$query$22$1878$1934$0() -> error|[stream, never...]{
+  bb0 {
+    %1 = ConstantLoad 1
+    %2 = newArray [stream, never...][%1]{(1, sourceStream)}
+    %0 = %2;
+    return;
+  }
+}
+$query$22$1878$1934$1(int) -> error|[int, never...]{
+  bb0 {
+    %3 = $desugar$0;
+    %4 = ConstantLoad 10
+    %5 = %4;
+    %2 = * %3 %5;
+    %6 = ConstantLoad 1
+    %7 = newArray [int, never...][%6]{%2}
+    %0 = %7;
+    return;
+  }
+}
+contextualSourceStream(stream) -> stream{
+  bb0 {
+    %2 = closure_fp $anon/.:$query$22$1878$1934$0
+    %3 = fp $anon/.:$query$22$1878$1934$1
+    %4 = newQueryStream stream clauses=2
+    %0 = %4;
+    return;
+  }
+}
+$query$22$1991$2053$0() -> error|[[int, int, never...], never...]{
+  bb0 {
+    %1 = ConstantLoad 1
+    %2 = ConstantLoad 2
+    %3 = ConstantLoad 2
+    %4 = newArray [int, int, never...][%3]{%1, %2}
+    %5 = ConstantLoad 1
+    %6 = newArray [[int, int, never...], never...][%5]{%4}
+    %0 = %6;
+    return;
+  }
+}
+$query$22$1991$2053$1(int) -> error|[int, never...]{
+  bb0 {
+    %2 = $desugar$0;
+    %3 = assignmentValue(%2) -> bb1;
+  }
+  bb1 {
+    %4 = ConstantLoad 1
+    %5 = newArray [int, never...][%4]{%3}
+    %0 = %5;
+    return;
+  }
+}
+$query$22$2554$2611$0() -> error|[[int, never...], never...]{
+  bb0 {
+    %1 = ConstantLoad 5
+    %2 = ConstantLoad 1
+    %3 = newArray [int, never...][%2]{%1}
+    %4 = ConstantLoad 1
+    %5 = newArray [[int, never...], never...][%4]{%3}
+    %0 = %5;
+    return;
+  }
+}
+$query$22$2554$2611$1(int) -> error|[int, never...]{
+  bb0 {
+    %2 = $desugar$1;
+    %3 = argumentValue(%2) -> bb1;
+  }
+  bb1 {
+    %4 = ConstantLoad 1
+    %5 = newArray [int, never...][%4]{%3}
+    %0 = %5;
+    return;
+  }
+}
+$query$22$2724$2789$0() -> error|[[int, int, never...], never...]{
+  bb0 {
+    %1 = ConstantLoad 0
+    %2 = ConstantLoad 1
+    %3 = ConstantLoad 2
+    %4 = newArray [int, int, never...][%3]{%1, %2}
+    %5 = ConstantLoad 1
+    %6 = newArray [[int, int, never...], never...][%5]{%4}
+    %0 = %6;
+    return;
+  }
+}
+$query$22$2724$2789$1(int) -> error|[int, never...]{
+  bb0 {
+    %2 = $desugar$2;
+    %3 = checkedValue(%2) -> bb1;
+  }
+  bb1 {
+    $desugar$0 = %3;
+    %5 = $desugar$0 is error
+    %5 ? bb2 : bb3;
+  }
+  bb2 {
+    PushScopeFrame 0
+    (1, %0) = (1, $desugar$0);
+    PopScopeFrame
+    return;
+  }
+  bb3 {
+    %6 = ConstantLoad 1
+    %7 = newArray [int, never...][%6]{$desugar$0}
+    %0 = %7;
+    return;
+  }
+}
+main() -> nil{
+  bb0 {
+    %1 = fp $anon/.:$query$22$1991$2053$0
+    %2 = fp $anon/.:$query$22$1991$2053$1
+    %3 = newQueryStream stream clauses=2
+    assigned = %3;
+    %5 = println(assignmentEvaluations) -> bb1;
+  }
+  bb1 {
+    %6 = streamNext assigned
+    %7 = println(%6) -> bb2;
+  }
+  bb2 {
+    %8 = println(assignmentEvaluations) -> bb3;
+  }
+  bb3 {
+    %9 = streamNext assigned
+    %10 = println(%9) -> bb4;
+  }
+  bb4 {
+    %11 = contextualStream() -> bb5;
+  }
+  bb5 {
+    returned = %11;
+    %13 = println(returnEvaluations) -> bb6;
+  }
+  bb6 {
+    %14 = streamNext returned
+    %15 = println(%14) -> bb7;
+  }
+  bb7 {
+    %16 = println(returnEvaluations) -> bb8;
+  }
+  bb8 {
+    %17 = println(argumentEvaluations) -> bb9;
+  }
+  bb9 {
+    %18 = fp $anon/.:$query$22$2554$2611$0
+    %19 = fp $anon/.:$query$22$2554$2611$1
+    %20 = newQueryStream stream clauses=2
+    %21 = consumeStream(%20) -> bb10;
+  }
+  bb10 {
+    %22 = println(%21) -> bb11;
+  }
+  bb11 {
+    %23 = println(argumentEvaluations) -> bb12;
+  }
+  bb12 {
+    %24 = fp $anon/.:$query$22$2724$2789$0
+    %25 = fp $anon/.:$query$22$2724$2789$1
+    %26 = newQueryStream stream clauses=2
+    checked = %26;
+    %28 = streamNext checked
+    %29 = println(%28) -> bb13;
+  }
+  bb13 {
+    %30 = streamNext checked
+    %31 = println(%30) -> bb14;
+  }
+  bb14 {
+    %32 = newObject $anon/.:FailingIterator
+    %33 = init(%32) -> bb15;
+  }
+  bb15 {
+    %35 = %33 is nil
+    %35 ? bb16 : bb17;
+  }
+  bb16 {
+    %34 = %32;
+    GOTO bb18;
+  }
+  bb17 {
+    %34 = %33;
+    GOTO bb18;
+  }
+  bb18 {
+    %36 = newStream stream %34
+    sourceStream = %36;
+    %38 = contextualSourceStream(sourceStream) -> bb19;
+  }
+  bb19 {
+    sourced = %38;
+    %40 = streamNext sourced
+    %41 = println(%40) -> bb20;
+  }
+  bb20 {
+    %42 = streamNext sourced
+    %43 = println(%42) -> bb21;
+  }
+  bb21 {
+    return;
+  }
+}

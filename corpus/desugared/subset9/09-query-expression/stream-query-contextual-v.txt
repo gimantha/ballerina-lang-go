@@ -1,0 +1,247 @@
+(package
+  (import-package ballerina io (as io))
+  (variable assignmentEvaluations (type
+    (value-type int)))
+  (variable returnEvaluations (type
+    (value-type int)))
+  (variable argumentEvaluations (type
+    (value-type int)))
+  (class-definition public FailingIterator
+    (variable nextValue (type
+      (value-type int)))
+    (function init () ()
+      (block-function-body
+        (assignment
+          (index-based-access
+            (simple-var-ref self)
+            (literal nextValue))
+          (literal 1))))
+    (function next () (
+      (union-type
+        (record-type
+          (field value
+            (value-type int)))
+        (union-type
+          (error-type)
+          (value-type null))))
+      (block-function-body
+        (if
+          (binary-expr >
+            (index-based-access
+              (simple-var-ref self)
+              (literal nextValue))
+            (literal 1))
+          (block-stmt
+            (return
+              (error-constructor-expr (
+                (literal source completion))))) ())
+        (block-stmt
+          (var-def
+            (variable value (type
+              (value-type int)) (expr
+              (index-based-access
+                (simple-var-ref self)
+                (literal nextValue)))))
+          (compound-assignment +
+            (index-based-access
+              (simple-var-ref self)
+              (literal nextValue))
+            (literal 1))
+          (return
+            (mapping-constructor-expr
+              (key-value
+                (literal value)
+                (simple-var-ref value))))))))
+  (function init () ()
+    (block-function-body
+      (assignment
+        (simple-var-ref assignmentEvaluations)
+        (literal 0))
+      (assignment
+        (simple-var-ref returnEvaluations)
+        (literal 0))
+      (assignment
+        (simple-var-ref argumentEvaluations)
+        (literal 0))))
+  (function assignmentValue (
+    (variable value (type
+      (value-type int)))) (
+    (value-type int))
+    (block-function-body
+      (compound-assignment +
+        (simple-var-ref assignmentEvaluations)
+        (literal 1))
+      (return
+        (binary-expr *
+          (simple-var-ref value)
+          (literal 10)))))
+  (function returnValue (
+    (variable value (type
+      (value-type int)))) (
+    (value-type int))
+    (block-function-body
+      (compound-assignment +
+        (simple-var-ref returnEvaluations)
+        (literal 1))
+      (return
+        (binary-expr *
+          (simple-var-ref value)
+          (literal 10)))))
+  (function argumentValue (
+    (variable value (type
+      (value-type int)))) (
+    (value-type int))
+    (block-function-body
+      (compound-assignment +
+        (simple-var-ref argumentEvaluations)
+        (literal 1))
+      (return
+        (binary-expr *
+          (simple-var-ref value)
+          (literal 10)))))
+  (function contextualStream () (
+    (stream-type
+      (value-type int)
+      (value-type null)))
+    (block-function-body
+      (return
+        (lazy-query-expr 0:1:0:0:0 7:1:0:0:0))))
+  (function consumeStream (
+    (variable values (type
+      (stream-type
+        (value-type int)
+        (value-type null))))) (
+    (union-type
+      (record-type
+        (field value
+          (value-type int)))
+      (value-type null)))
+    (block-function-body
+      (return
+        (invocation next expr:
+          (simple-var-ref values) ()))))
+  (function checkedValue (
+    (variable value (type
+      (value-type int)))) (
+    (union-type
+      (value-type int)
+      (error-type)))
+    (block-function-body
+      (if
+        (binary-expr ==
+          (simple-var-ref value)
+          (literal 0))
+        (block-stmt
+          (return
+            (error-constructor-expr (
+              (literal checked completion))))) ())
+      (block-stmt
+        (return
+          (simple-var-ref value)))))
+  (function contextualSourceStream (
+    (variable sourceStream (type
+      (stream-type
+        (value-type int)
+        (union-type
+          (error-type)
+          (value-type null)))))) (
+    (stream-type
+      (value-type int)
+      (union-type
+        (error-type)
+        (value-type null))))
+    (block-function-body
+      (return
+        (lazy-query-expr 0:1:0:0:0 7:1:0:0:0))))
+  (function main () (
+    (value-type null))
+    (block-function-body
+      (var-def
+        (variable assigned (type
+          (stream-type
+            (value-type int)
+            (value-type null))) (expr
+          (lazy-query-expr 0:1:0:0:0 7:1:0:0:0))))
+      (expression-stmt
+        (invocation io println (
+          (simple-var-ref assignmentEvaluations))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref assigned) ()))))
+      (expression-stmt
+        (invocation io println (
+          (simple-var-ref assignmentEvaluations))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref assigned) ()))))
+      (var-def
+        (variable returned (type
+          (stream-type
+            (value-type int)
+            (value-type null))) (expr
+          (invocation contextualStream ()))))
+      (expression-stmt
+        (invocation io println (
+          (simple-var-ref returnEvaluations))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref returned) ()))))
+      (expression-stmt
+        (invocation io println (
+          (simple-var-ref returnEvaluations))))
+      (expression-stmt
+        (invocation io println (
+          (simple-var-ref argumentEvaluations))))
+      (expression-stmt
+        (invocation io println (
+          (invocation consumeStream (
+            (lazy-query-expr 0:1:0:0:0 7:1:0:0:0))))))
+      (expression-stmt
+        (invocation io println (
+          (simple-var-ref argumentEvaluations))))
+      (var-def
+        (variable checked (type
+          (stream-type
+            (value-type int)
+            (union-type
+              (error-type)
+              (value-type null)))) (expr
+          (lazy-query-expr 0:1:0:0:0 7:1:0:0:0))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref checked) ()))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref checked) ()))))
+      (var-def
+        (variable sourceStream (expr
+          (new
+            (stream-type
+              (value-type int)
+              (union-type
+                (error-type)
+                (value-type null))) (
+            (new
+              (user-defined-type FailingIterator) ()))))))
+      (var-def
+        (variable sourced (type
+          (stream-type
+            (value-type int)
+            (union-type
+              (error-type)
+              (value-type null)))) (expr
+          (invocation contextualSourceStream (
+            (simple-var-ref sourceStream))))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref sourced) ()))))
+      (expression-stmt
+        (invocation io println (
+          (invocation next expr:
+            (simple-var-ref sourced) ())))))))

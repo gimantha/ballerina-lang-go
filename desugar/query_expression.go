@@ -28,7 +28,8 @@ import (
 )
 
 func walkQueryExpr(cx *functionContext, expr *ast.BLangQueryExpr) desugaredNode[ast.BLangActionOrExpression] {
-	if expr.QueryConstructType == ast.TypeKind_STREAM {
+	if expr.QueryConstructType == ast.TypeKind_STREAM ||
+		semtypes.IsSubtype(cx.typeCtx(), expr.GetDeterminedType(), semtypes.STREAM) {
 		return walkLazyQueryExpr(cx, expr)
 	}
 	fromClause := expr.QueryClauseList[0].(*ast.BLangFromClause)

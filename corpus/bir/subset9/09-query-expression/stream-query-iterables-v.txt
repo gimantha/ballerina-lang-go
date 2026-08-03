@@ -201,7 +201,7 @@ class TrackedStreamIterator {
     }
   }
 }
-$query$0() -> error|[[int, int, never...], never...]{
+$query$22$2119$2176$0() -> error|[[int, int, never...], never...]{
   bb0 {
     %1 = ConstantLoad 1
     %2 = ConstantLoad 2
@@ -213,7 +213,7 @@ $query$0() -> error|[[int, int, never...], never...]{
     return;
   }
 }
-$query$1(int) -> error|[int, never...]{
+$query$22$2119$2176$1(int) -> error|[int, never...]{
   bb0 {
     %3 = $desugar$0;
     %4 = ConstantLoad 10
@@ -225,7 +225,7 @@ $query$1(int) -> error|[int, never...]{
     return;
   }
 }
-$query$2() -> error|[{| int... |}, never...]{
+$query$22$2366$2419$0() -> error|[{| int... |}, never...]{
   bb0 {
     %1 = ConstantLoad 1
     %2 = newArray [{| int... |}, never...][%1]{(1, numbers)}
@@ -233,7 +233,7 @@ $query$2() -> error|[{| int... |}, never...]{
     return;
   }
 }
-$query$3(int) -> error|[int, never...]{
+$query$22$2366$2419$1(int) -> error|[int, never...]{
   bb0 {
     %2 = ConstantLoad 1
     %3 = newArray [int, never...][%2]{$desugar$1}
@@ -241,7 +241,7 @@ $query$3(int) -> error|[int, never...]{
     return;
   }
 }
-$query$4() -> error|["A😀", never...]{
+$query$22$2568$2637$0() -> error|["A😀", never...]{
   bb0 {
     %1 = ConstantLoad A😀
     %2 = ConstantLoad 1
@@ -250,7 +250,7 @@ $query$4() -> error|["A😀", never...]{
     return;
   }
 }
-$query$5(string) -> error|[string, never...]{
+$query$22$2568$2637$1(string) -> error|[string, never...]{
   bb0 {
     %2 = ConstantLoad 1
     %3 = newArray [string, never...][%2]{$desugar$2}
@@ -258,7 +258,7 @@ $query$5(string) -> error|[string, never...]{
     return;
   }
 }
-$query$6() -> error|[xml<xml:Text|xml:Element>, never...]{
+$query$22$2790$2848$0() -> error|[xml<xml:Text|xml:Element>, never...]{
   bb0 {
     %1 = ConstantLoad a
     %2 = newXMLElement(%1, ())
@@ -271,7 +271,7 @@ $query$6() -> error|[xml<xml:Text|xml:Element>, never...]{
     return;
   }
 }
-$query$7(xml<xml:Text|xml:Element>) -> error|[xml<xml:Text|xml:Element>, never...]{
+$query$22$2790$2848$1(xml<xml:Text|xml:Element>) -> error|[xml<xml:Text|xml:Element>, never...]{
   bb0 {
     %2 = ConstantLoad 1
     %3 = newArray [xml<xml:Text|xml:Element>, never...][%2]{$desugar$3}
@@ -279,7 +279,7 @@ $query$7(xml<xml:Text|xml:Element>) -> error|[xml<xml:Text|xml:Element>, never..
     return;
   }
 }
-$query$8() -> error|[object&object { public function init(object { public function init() returns nil; public function next() returns nil|{| value: int, never... |}; private int nextValue }) returns nil; public function iterator() returns object { public function init() returns nil; public function next() returns nil|{| value: int, never... |}; private int nextValue }; private object { public function init() returns nil; public function next() returns nil|{| value: int, never... |}; private int nextValue } iteratorValue }, never...]{
+$query$22$3040$3135$0() -> error|[object&object { public function init(object { public function init() returns nil; public function next() returns nil|{| value: int, never... |}; private int nextValue }) returns nil; public function iterator() returns object { public function init() returns nil; public function next() returns nil|{| value: int, never... |}; private int nextValue }; private object { public function init() returns nil; public function next() returns nil|{| value: int, never... |}; private int nextValue } iteratorValue }, never...]{
   bb0 {
     %1 = newObject $anon/.:RangeIterable
     %2 = init(%1,(1, objectIterator)) -> bb1;
@@ -303,7 +303,7 @@ $query$8() -> error|[object&object { public function init(object { public functi
     return;
   }
 }
-$query$9() -> error|[1, never...]{
+$query$22$3040$3135$1() -> error|[1, never...]{
   bb0 {
     %1 = ConstantLoad 1
     %2 = ConstantLoad 1
@@ -312,7 +312,7 @@ $query$9() -> error|[1, never...]{
     return;
   }
 }
-$query$10(int) -> error|[int, never...]{
+$query$22$3040$3135$2(int) -> error|[int, never...]{
   bb0 {
     %2 = ConstantLoad 1
     %3 = newArray [int, never...][%2]{$desugar$4}
@@ -320,7 +320,7 @@ $query$10(int) -> error|[int, never...]{
     return;
   }
 }
-$query$11() -> error|[stream, never...]{
+$query$22$3476$3551$0() -> error|[stream, never...]{
   bb0 {
     %1 = ConstantLoad 1
     %2 = newArray [stream, never...][%1]{(1, trackedStream)}
@@ -328,7 +328,7 @@ $query$11() -> error|[stream, never...]{
     return;
   }
 }
-$query$12() -> error|[1, never...]{
+$query$22$3476$3551$1() -> error|[1, never...]{
   bb0 {
     %1 = ConstantLoad 1
     %2 = ConstantLoad 1
@@ -337,7 +337,7 @@ $query$12() -> error|[1, never...]{
     return;
   }
 }
-$query$13(int) -> error|[int, never...]{
+$query$22$3476$3551$2(int) -> error|[int, never...]{
   bb0 {
     %2 = ConstantLoad 1
     %3 = newArray [int, never...][%2]{$desugar$5}
@@ -345,7 +345,7 @@ $query$13(int) -> error|[int, never...]{
     return;
   }
 }
-$query$14() -> error|[stream, never...]{
+$query$22$4034$4097$0() -> error|[stream, never...]{
   bb0 {
     %1 = ConstantLoad 1
     %2 = newArray [stream, never...][%1]{(1, sourceStream)}
@@ -353,7 +353,7 @@ $query$14() -> error|[stream, never...]{
     return;
   }
 }
-$query$15(int) -> error|[int, never...]{
+$query$22$4034$4097$1(int) -> error|[int, never...]{
   bb0 {
     %3 = $desugar$6;
     %4 = ConstantLoad 10
@@ -365,7 +365,7 @@ $query$15(int) -> error|[int, never...]{
     return;
   }
 }
-$query$16() -> error|[[int, int, never...], never...]{
+$query$22$4629$4753$0() -> error|[[int, int, never...], never...]{
   bb0 {
     %1 = ConstantLoad 1
     %2 = ConstantLoad 2
@@ -377,7 +377,7 @@ $query$16() -> error|[[int, int, never...], never...]{
     return;
   }
 }
-$query$17() -> error|[stream, never...]{
+$query$22$4629$4753$1() -> error|[stream, never...]{
   bb0 {
     %1 = ConstantLoad 1
     %2 = newArray [stream, never...][%1]{(1, joinStream)}
@@ -385,7 +385,7 @@ $query$17() -> error|[stream, never...]{
     return;
   }
 }
-$query$18(int) -> error|[int, never...]{
+$query$22$4629$4753$2(int) -> error|[int, never...]{
   bb0 {
     %2 = ConstantLoad 1
     %3 = newArray [int, never...][%2]{$desugar$7}
@@ -393,7 +393,7 @@ $query$18(int) -> error|[int, never...]{
     return;
   }
 }
-$query$19(int) -> error|[int, never...]{
+$query$22$4629$4753$3(int) -> error|[int, never...]{
   bb0 {
     %2 = ConstantLoad 1
     %3 = newArray [int, never...][%2]{$desugar$8}
@@ -401,7 +401,7 @@ $query$19(int) -> error|[int, never...]{
     return;
   }
 }
-$query$20(int,int) -> error|[int, never...]{
+$query$22$4629$4753$4(int,int) -> error|[int, never...]{
   bb0 {
     %4 = $desugar$9;
     %5 = $desugar$10;
@@ -414,8 +414,8 @@ $query$20(int,int) -> error|[int, never...]{
 }
 main() -> nil{
   bb0 {
-    %1 = fp $anon/.:$query$0
-    %2 = fp $anon/.:$query$1
+    %1 = fp $anon/.:$query$22$2119$2176$0
+    %2 = fp $anon/.:$query$22$2119$2176$1
     %3 = newQueryStream stream clauses=2
     listValues = %3;
     %5 = streamNext listValues
@@ -432,8 +432,8 @@ main() -> nil{
     %12 = ConstantLoad 2
     %13 = newMap {| int... |}{%9=%10, %11=%12}
     numbers = %13;
-    %15 = closure_fp $anon/.:$query$2
-    %16 = fp $anon/.:$query$3
+    %15 = closure_fp $anon/.:$query$22$2366$2419$0
+    %16 = fp $anon/.:$query$22$2366$2419$1
     %17 = newQueryStream stream clauses=2
     mapValues = %17;
     %19 = streamNext mapValues
@@ -444,8 +444,8 @@ main() -> nil{
     %22 = println(%21) -> bb4;
   }
   bb4 {
-    %23 = fp $anon/.:$query$4
-    %24 = fp $anon/.:$query$5
+    %23 = fp $anon/.:$query$22$2568$2637$0
+    %24 = fp $anon/.:$query$22$2568$2637$1
     %25 = newQueryStream stream clauses=2
     characters = %25;
     %27 = streamNext characters
@@ -456,8 +456,8 @@ main() -> nil{
     %30 = println(%29) -> bb6;
   }
   bb6 {
-    %31 = fp $anon/.:$query$6
-    %32 = fp $anon/.:$query$7
+    %31 = fp $anon/.:$query$22$2790$2848$0
+    %32 = fp $anon/.:$query$22$2790$2848$1
     %33 = newQueryStream stream clauses=2
     xmlItems = %33;
     %35 = streamNext xmlItems
@@ -485,9 +485,9 @@ main() -> nil{
   }
   bb12 {
     objectIterator = %41;
-    %44 = closure_fp $anon/.:$query$8
-    %45 = fp $anon/.:$query$9
-    %46 = fp $anon/.:$query$10
+    %44 = closure_fp $anon/.:$query$22$3040$3135$0
+    %45 = fp $anon/.:$query$22$3040$3135$1
+    %46 = fp $anon/.:$query$22$3040$3135$2
     %47 = newQueryStream stream clauses=3
     objectValues = %47;
     %49 = streamNext objectValues
@@ -525,9 +525,9 @@ main() -> nil{
     trackedIterator = %61;
     %64 = newStream stream trackedIterator
     trackedStream = %64;
-    %66 = closure_fp $anon/.:$query$11
-    %67 = fp $anon/.:$query$12
-    %68 = fp $anon/.:$query$13
+    %66 = closure_fp $anon/.:$query$22$3476$3551$0
+    %67 = fp $anon/.:$query$22$3476$3551$1
+    %68 = fp $anon/.:$query$22$3476$3551$2
     %69 = newQueryStream stream clauses=3
     limitedStreamValues = %69;
     %71 = streamNext limitedStreamValues
@@ -577,8 +577,8 @@ main() -> nil{
     sourceIterator = %91;
     %94 = newStream stream sourceIterator
     sourceStream = %94;
-    %96 = closure_fp $anon/.:$query$14
-    %97 = fp $anon/.:$query$15
+    %96 = closure_fp $anon/.:$query$22$4034$4097$0
+    %97 = fp $anon/.:$query$22$4034$4097$1
     %98 = newQueryStream stream clauses=2
     sourceValues = %98;
     %100 = streamNext sourceValues
@@ -628,11 +628,11 @@ main() -> nil{
     joinIterator = %118;
     %121 = newStream stream joinIterator
     joinStream = %121;
-    %123 = fp $anon/.:$query$16
-    %124 = closure_fp $anon/.:$query$17
-    %125 = fp $anon/.:$query$18
-    %126 = fp $anon/.:$query$19
-    %127 = fp $anon/.:$query$20
+    %123 = fp $anon/.:$query$22$4629$4753$0
+    %124 = closure_fp $anon/.:$query$22$4629$4753$1
+    %125 = fp $anon/.:$query$22$4629$4753$2
+    %126 = fp $anon/.:$query$22$4629$4753$3
+    %127 = fp $anon/.:$query$22$4629$4753$4
     %128 = newQueryStream stream clauses=3
     joinedValues = %128;
     %130 = streamNext joinedValues

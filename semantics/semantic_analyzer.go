@@ -1283,7 +1283,8 @@ func analyzeQueryIntermediateClauses[A analyzer](
 }
 
 func analyzeQueryExpr[A analyzer](a A, queryExpr *ast.BLangQueryExpr, expectedType semtypes.SemType) bool {
-	if queryExpr.QueryConstructType == ast.TypeKind_STREAM {
+	queryConstructType := queryExpressionConstructType(a.tyCtx(), queryExpr, expectedType)
+	if queryConstructType == ast.TypeKind_STREAM {
 		completionTy := semtypes.StreamCompletionType(a.tyCtx(), queryExpr.GetDeterminedType())
 		if semtypes.IsZero(completionTy) {
 			a.internalErr("failed to extract stream query completion type", queryExpr.GetPosition())
@@ -1314,10 +1315,10 @@ func analyzeQueryExpr[A analyzer](a A, queryExpr *ast.BLangQueryExpr, expectedTy
 		selectExpectedTy := querySelectExpectedType(
 			a.tyCtx(),
 			a.tyCtx().Env(),
-			queryExpr.QueryConstructType,
+			queryConstructType,
 			expectedType,
 		)
-		if semtypes.IsZero(selectExpectedTy) && queryExpr.QueryConstructType == ast.TypeKind_MAP {
+		if semtypes.IsZero(selectExpectedTy) && queryConstructType == ast.TypeKind_MAP {
 			selectExpectedTy = mapQuerySelectExpectedType(a.tyCtx().Env())
 		}
 		if !analyzeActionOrExpression(a, clauses.selectClause.Expression, selectExpectedTy) {

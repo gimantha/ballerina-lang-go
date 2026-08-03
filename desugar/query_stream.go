@@ -73,11 +73,21 @@ func walkLazyQueryExpr(
 	lazyExpr.SetDeterminedType(expr.GetDeterminedType())
 	lazyExpr.SetPosition(expr.GetPosition())
 
+	evaluatorIndex := 0
+	createEvaluator := func(
+		expr ast.BLangActionOrExpression,
+		bindings []queryRowBinding,
+	) (*ast.BLangLambdaFunction, bool) {
+		fnName := lazyQueryFunctionName(lazyExpr.GetPosition(), evaluatorIndex)
+		evaluatorIndex++
+		return createLazyQueryEvaluator(cx, expr, bindings, fnName)
+	}
+
 	bindings := make([]queryRowBinding, 0)
 	for _, queryClause := range expr.QueryClauseList {
 		switch clause := queryClause.(type) {
 		case *ast.BLangFromClause:
-			evaluator, ok := createLazyQueryEvaluator(cx, clause.Collection, bindings)
+			evaluator, ok := createEvaluator(clause.Collection, bindings)
 			if !ok {
 				return desugaredNode[ast.BLangActionOrExpression]{replacementNode: expr}
 			}
@@ -91,7 +101,7 @@ func walkLazyQueryExpr(
 			})
 			bindings = append(bindings, binding)
 		case *ast.BLangJoinClause:
-			collectionEvaluator, ok := createLazyQueryEvaluator(cx, clause.Collection, nil)
+			collectionEvaluator, ok := createEvaluator(clause.Collection, nil)
 			if !ok {
 				return desugaredNode[ast.BLangActionOrExpression]{replacementNode: expr}
 			}
@@ -105,11 +115,11 @@ func walkLazyQueryExpr(
 				cx.internalError("lazy query join keys must be expressions")
 				return desugaredNode[ast.BLangActionOrExpression]{replacementNode: expr}
 			}
-			leftKeyEvaluator, ok := createLazyQueryEvaluator(cx, leftKey, bindings)
+			leftKeyEvaluator, ok := createEvaluator(leftKey, bindings)
 			if !ok {
 				return desugaredNode[ast.BLangActionOrExpression]{replacementNode: expr}
 			}
-			rightKeyEvaluator, ok := createLazyQueryEvaluator(cx, rightKey, []queryRowBinding{binding})
+			rightKeyEvaluator, ok := createEvaluator(rightKey, []queryRowBinding{binding})
 			if !ok {
 				return desugaredNode[ast.BLangActionOrExpression]{replacementNode: expr}
 			}
@@ -124,7 +134,7 @@ func walkLazyQueryExpr(
 			})
 			bindings = append(bindings, binding)
 		case *ast.BLangWhereClause:
-			evaluator, ok := createLazyQueryEvaluator(cx, clause.Expression, bindings)
+			evaluator, ok := createEvaluator(clause.Expression, bindings)
 			if !ok {
 				return desugaredNode[ast.BLangActionOrExpression]{replacementNode: expr}
 			}
@@ -140,7 +150,7 @@ func walkLazyQueryExpr(
 				if !ok || varDef.Var.Expr == nil {
 					return desugaredNode[ast.BLangActionOrExpression]{replacementNode: expr}
 				}
-				evaluator, ok := createLazyQueryEvaluator(cx, varDef.Var.Expr, bindings)
+				evaluator, ok := createEvaluator(varDef.Var.Expr, bindings)
 				if !ok {
 					return desugaredNode[ast.BLangActionOrExpression]{replacementNode: expr}
 				}
@@ -156,7 +166,7 @@ func walkLazyQueryExpr(
 			ascending := make([]bool, len(clause.OrderByKeyList))
 			for i := range clause.OrderByKeyList {
 				orderKey := &clause.OrderByKeyList[i]
-				evaluator, ok := createLazyQueryEvaluator(cx, orderKey.Expression, bindings)
+				evaluator, ok := createEvaluator(orderKey.Expression, bindings)
 				if !ok {
 					return desugaredNode[ast.BLangActionOrExpression]{replacementNode: expr}
 				}
@@ -183,7 +193,7 @@ func walkLazyQueryExpr(
 						cx.internalError("lazy query grouping variable is not bound")
 						return desugaredNode[ast.BLangActionOrExpression]{replacementNode: expr}
 					}
-					evaluator, ok := createLazyQueryEvaluator(cx, groupingKey.VariableRef, groupBindings)
+					evaluator, ok := createEvaluator(groupingKey.VariableRef, groupBindings)
 					if !ok {
 						return desugaredNode[ast.BLangActionOrExpression]{replacementNode: expr}
 					}
@@ -197,7 +207,7 @@ func walkLazyQueryExpr(
 						cx.internalError("lazy query grouping variable must have an initializer")
 						return desugaredNode[ast.BLangActionOrExpression]{replacementNode: expr}
 					}
-					evaluator, ok := createLazyQueryEvaluator(cx, varDef.Var.Expr, groupBindings)
+					evaluator, ok := createEvaluator(varDef.Var.Expr, groupBindings)
 					if !ok {
 						return desugaredNode[ast.BLangActionOrExpression]{replacementNode: expr}
 					}
@@ -238,7 +248,7 @@ func walkLazyQueryExpr(
 			})
 			bindings = outputBindings
 		case *ast.BLangLimitClause:
-			evaluator, ok := createLazyQueryEvaluator(cx, clause.Expression, nil)
+			evaluator, ok := createEvaluator(clause.Expression, nil)
 			if !ok {
 				return desugaredNode[ast.BLangActionOrExpression]{replacementNode: expr}
 			}
@@ -247,7 +257,7 @@ func walkLazyQueryExpr(
 				Evaluators: []*ast.BLangLambdaFunction{evaluator},
 			})
 		case *ast.BLangSelectClause:
-			evaluator, ok := createLazyQueryEvaluator(cx, clause.Expression, bindings)
+			evaluator, ok := createEvaluator(clause.Expression, bindings)
 			if !ok {
 				return desugaredNode[ast.BLangActionOrExpression]{replacementNode: expr}
 			}
@@ -281,6 +291,7 @@ func createLazyQueryEvaluator(
 	cx *functionContext,
 	expr ast.BLangActionOrExpression,
 	bindings []queryRowBinding,
+	fnName string,
 ) (*ast.BLangLambdaFunction, bool) {
 	pos := expr.GetPosition()
 	valueTy := expr.GetDeterminedType()
@@ -326,7 +337,6 @@ func createLazyQueryEvaluator(
 		semtypes.FunctionQualifiersFrom(cx.typeEnv(), false, false),
 	)
 
-	fnName := cx.nextLazyQueryFunctionName()
 	fnSymbol := model.NewFunctionSymbol(fnName, model.FunctionSignature{
 		ParamTypes: paramTypes,
 		ParamNames: paramNames,

@@ -143,7 +143,7 @@ checkedValue(int) -> int|error{
     return;
   }
 }
-$query$0() -> error|[[int, int, int, never...], never...]{
+$query$22$1762$1850$0() -> error|[[int, int, int, never...], never...]{
   bb0 {
     %1 = ConstantLoad 1
     %2 = ConstantLoad 2
@@ -156,7 +156,7 @@ $query$0() -> error|[[int, int, int, never...], never...]{
     return;
   }
 }
-$query$1(int) -> error|[boolean, never...]{
+$query$22$1762$1850$1(int) -> error|[boolean, never...]{
   bb0 {
     %3 = $desugar$0;
     %4 = ConstantLoad 1
@@ -168,7 +168,7 @@ $query$1(int) -> error|[boolean, never...]{
     return;
   }
 }
-$query$2(int) -> error|[int, never...]{
+$query$22$1762$1850$2(int) -> error|[int, never...]{
   bb0 {
     %2 = $desugar$1;
     %3 = project(%2) -> bb1;
@@ -180,7 +180,7 @@ $query$2(int) -> error|[int, never...]{
     return;
   }
 }
-$query$3() -> error|[[int, int, int, never...], never...]{
+$query$22$2165$2349$0() -> error|[[int, int, int, never...], never...]{
   bb0 {
     %1 = ConstantLoad 1
     %2 = ConstantLoad 2
@@ -193,7 +193,7 @@ $query$3() -> error|[[int, int, int, never...], never...]{
     return;
   }
 }
-$query$4(int) -> error|[[int...], never...]{
+$query$22$2165$2349$1(int) -> error|[[int...], never...]{
   bb0 {
     %2 = $desugar$2;
     %3 = inner(%2) -> bb1;
@@ -205,7 +205,7 @@ $query$4(int) -> error|[[int...], never...]{
     return;
   }
 }
-$query$5(int,int) -> error|[int, never...]{
+$query$22$2165$2349$2(int,int) -> error|[int, never...]{
   bb0 {
     %4 = $desugar$3;
     %5 = $desugar$4;
@@ -216,7 +216,7 @@ $query$5(int,int) -> error|[int, never...]{
     return;
   }
 }
-$query$6(int,int,int) -> error|[boolean, never...]{
+$query$22$2165$2349$3(int,int,int) -> error|[boolean, never...]{
   bb0 {
     %5 = $desugar$7;
     %6 = ConstantLoad 3
@@ -228,7 +228,7 @@ $query$6(int,int,int) -> error|[boolean, never...]{
     return;
   }
 }
-$query$7() -> error|[2, never...]{
+$query$22$2165$2349$4() -> error|[2, never...]{
   bb0 {
     %1 = ConstantLoad 2
     %2 = ConstantLoad 1
@@ -237,7 +237,7 @@ $query$7() -> error|[2, never...]{
     return;
   }
 }
-$query$8(int,int,int) -> error|[int, never...]{
+$query$22$2165$2349$5(int,int,int) -> error|[int, never...]{
   bb0 {
     %4 = ConstantLoad 1
     %5 = newArray [int, never...][%4]{$desugar$10}
@@ -245,7 +245,7 @@ $query$8(int,int,int) -> error|[int, never...]{
     return;
   }
 }
-$query$9() -> error|[[int, int, int, never...], never...]{
+$query$22$2716$2908$0() -> error|[[int, int, int, never...], never...]{
   bb0 {
     %1 = ConstantLoad 2
     %2 = ConstantLoad 1
@@ -258,7 +258,7 @@ $query$9() -> error|[[int, int, int, never...], never...]{
     return;
   }
 }
-$query$10() -> error|[[int...], never...]{
+$query$22$2716$2908$1() -> error|[[int...], never...]{
   bb0 {
     %1 = joinedValues() -> bb1;
   }
@@ -269,7 +269,7 @@ $query$10() -> error|[[int...], never...]{
     return;
   }
 }
-$query$11(int) -> error|[int, never...]{
+$query$22$2716$2908$2(int) -> error|[int, never...]{
   bb0 {
     %2 = $desugar$11;
     %3 = leftJoinKey(%2) -> bb1;
@@ -281,7 +281,7 @@ $query$11(int) -> error|[int, never...]{
     return;
   }
 }
-$query$12(int) -> error|[int, never...]{
+$query$22$2716$2908$3(int) -> error|[int, never...]{
   bb0 {
     %2 = $desugar$12;
     %3 = rightJoinKey(%2) -> bb1;
@@ -293,7 +293,7 @@ $query$12(int) -> error|[int, never...]{
     return;
   }
 }
-$query$13(int,int) -> error|[int, never...]{
+$query$22$2716$2908$4(int,int) -> error|[int, never...]{
   bb0 {
     %3 = ConstantLoad 1
     %4 = newArray [int, never...][%3]{$desugar$14}
@@ -301,7 +301,7 @@ $query$13(int,int) -> error|[int, never...]{
     return;
   }
 }
-$query$14(int,int) -> error|[int, never...]{
+$query$22$2716$2908$5(int,int) -> error|[int, never...]{
   bb0 {
     %4 = $desugar$15;
     %5 = $desugar$16;
@@ -312,7 +312,7 @@ $query$14(int,int) -> error|[int, never...]{
     return;
   }
 }
-$query$15() -> error|[[int, int, never...], never...]{
+$query$22$3276$3398$0() -> error|[[int, int, never...], never...]{
   bb0 {
     %1 = ConstantLoad 1
     %2 = ConstantLoad 2
@@ -324,7 +324,7 @@ $query$15() -> error|[[int, int, never...], never...]{
     return;
   }
 }
-$query$16() -> error|[[int, never...], never...]{
+$query$22$3276$3398$1() -> error|[[int, never...], never...]{
   bb0 {
     %1 = ConstantLoad 1
     %2 = ConstantLoad 1
@@ -335,7 +335,7 @@ $query$16() -> error|[[int, never...], never...]{
     return;
   }
 }
-$query$17(int) -> error|[int, never...]{
+$query$22$3276$3398$2(int) -> error|[int, never...]{
   bb0 {
     %2 = ConstantLoad 1
     %3 = newArray [int, never...][%2]{$desugar$17}
@@ -343,7 +343,7 @@ $query$17(int) -> error|[int, never...]{
     return;
   }
 }
-$query$18(nil|int) -> error|[nil|int, never...]{
+$query$22$3276$3398$3(nil|int) -> error|[nil|int, never...]{
   bb0 {
     %2 = ConstantLoad 1
     %3 = newArray [nil|int, never...][%2]{$desugar$18}
@@ -351,7 +351,7 @@ $query$18(nil|int) -> error|[nil|int, never...]{
     return;
   }
 }
-$query$19(int,nil|int) -> error|[boolean, never...]{
+$query$22$3276$3398$4(int,nil|int) -> error|[boolean, never...]{
   bb0 {
     %3 = $desugar$20 is nil
     %4 = ConstantLoad 1
@@ -360,7 +360,7 @@ $query$19(int,nil|int) -> error|[boolean, never...]{
     return;
   }
 }
-$query$20() -> error|[[int, int, int, int, never...], never...]{
+$query$22$3601$3702$0() -> error|[[int, int, int, int, never...], never...]{
   bb0 {
     %1 = ConstantLoad 1
     %2 = ConstantLoad 2
@@ -374,7 +374,7 @@ $query$20() -> error|[[int, int, int, int, never...], never...]{
     return;
   }
 }
-$query$21(int) -> error|[boolean, never...]{
+$query$22$3601$3702$1(int) -> error|[boolean, never...]{
   bb0 {
     %2 = $desugar$21;
     %3 = groupKey(%2) -> bb1;
@@ -386,7 +386,7 @@ $query$21(int) -> error|[boolean, never...]{
     return;
   }
 }
-$query$22([int, int...]) -> error|[[int...], never...]{
+$query$22$3601$3702$2([int, int...]) -> error|[[int...], never...]{
   bb0 {
     %2 = ConstantLoad 0
     %3 = newArray [int...][%2]{}
@@ -428,7 +428,7 @@ $query$22([int, int...]) -> error|[[int...], never...]{
     GOTO bb2;
   }
 }
-$query$23() -> error|[[int, int, never...], never...]{
+$query$22$3980$4052$0() -> error|[[int, int, never...], never...]{
   bb0 {
     %1 = ConstantLoad 0
     %2 = ConstantLoad 1
@@ -440,7 +440,7 @@ $query$23() -> error|[[int, int, never...], never...]{
     return;
   }
 }
-$query$24(int) -> error|[int, never...]{
+$query$22$3980$4052$1(int) -> error|[int, never...]{
   bb0 {
     %2 = $desugar$23;
     %3 = checkedValue(%2) -> bb1;
@@ -463,7 +463,7 @@ $query$24(int) -> error|[int, never...]{
     return;
   }
 }
-$query$25() -> error|[[int...], never...]{
+$query$22$4250$4338$0() -> error|[[int...], never...]{
   bb0 {
     %1 = limitedValues() -> bb1;
   }
@@ -474,7 +474,7 @@ $query$25() -> error|[[int...], never...]{
     return;
   }
 }
-$query$26() -> error|[int, never...]{
+$query$22$4250$4338$1() -> error|[int, never...]{
   bb0 {
     %1 = queryLimit() -> bb1;
   }
@@ -485,7 +485,7 @@ $query$26() -> error|[int, never...]{
     return;
   }
 }
-$query$27(int) -> error|[int, never...]{
+$query$22$4250$4338$2(int) -> error|[int, never...]{
   bb0 {
     %2 = ConstantLoad 1
     %3 = newArray [int, never...][%2]{$desugar$24}
@@ -495,9 +495,9 @@ $query$27(int) -> error|[int, never...]{
 }
 main() -> nil{
   bb0 {
-    %1 = fp $anon/.:$query$0
-    %2 = fp $anon/.:$query$1
-    %3 = fp $anon/.:$query$2
+    %1 = fp $anon/.:$query$22$1762$1850$0
+    %2 = fp $anon/.:$query$22$1762$1850$1
+    %3 = fp $anon/.:$query$22$1762$1850$2
     %4 = newQueryStream stream clauses=3
     projected = %4;
     %6 = println(projections) -> bb1;
@@ -521,12 +521,12 @@ main() -> nil{
     %14 = println(%13) -> bb6;
   }
   bb6 {
-    %15 = fp $anon/.:$query$3
-    %16 = fp $anon/.:$query$4
-    %17 = fp $anon/.:$query$5
-    %18 = fp $anon/.:$query$6
-    %19 = fp $anon/.:$query$7
-    %20 = fp $anon/.:$query$8
+    %15 = fp $anon/.:$query$22$2165$2349$0
+    %16 = fp $anon/.:$query$22$2165$2349$1
+    %17 = fp $anon/.:$query$22$2165$2349$2
+    %18 = fp $anon/.:$query$22$2165$2349$3
+    %19 = fp $anon/.:$query$22$2165$2349$4
+    %20 = fp $anon/.:$query$22$2165$2349$5
     %21 = newQueryStream stream clauses=6
     nested = %21;
     %23 = println(innerCollections) -> bb7;
@@ -553,12 +553,12 @@ main() -> nil{
     %32 = println(innerCollections) -> bb13;
   }
   bb13 {
-    %33 = fp $anon/.:$query$9
-    %34 = fp $anon/.:$query$10
-    %35 = fp $anon/.:$query$11
-    %36 = fp $anon/.:$query$12
-    %37 = fp $anon/.:$query$13
-    %38 = fp $anon/.:$query$14
+    %33 = fp $anon/.:$query$22$2716$2908$0
+    %34 = fp $anon/.:$query$22$2716$2908$1
+    %35 = fp $anon/.:$query$22$2716$2908$2
+    %36 = fp $anon/.:$query$22$2716$2908$3
+    %37 = fp $anon/.:$query$22$2716$2908$4
+    %38 = fp $anon/.:$query$22$2716$2908$5
     %39 = newQueryStream stream clauses=4
     joined = %39;
     %41 = println(joinCollections) -> bb14;
@@ -585,11 +585,11 @@ main() -> nil{
     %50 = println(%49) -> bb20;
   }
   bb20 {
-    %51 = fp $anon/.:$query$15
-    %52 = fp $anon/.:$query$16
-    %53 = fp $anon/.:$query$17
-    %54 = fp $anon/.:$query$18
-    %55 = fp $anon/.:$query$19
+    %51 = fp $anon/.:$query$22$3276$3398$0
+    %52 = fp $anon/.:$query$22$3276$3398$1
+    %53 = fp $anon/.:$query$22$3276$3398$2
+    %54 = fp $anon/.:$query$22$3276$3398$3
+    %55 = fp $anon/.:$query$22$3276$3398$4
     %56 = newQueryStream stream clauses=3
     outerJoined = %56;
     %58 = streamNext outerJoined
@@ -604,9 +604,9 @@ main() -> nil{
     %63 = println(%62) -> bb23;
   }
   bb23 {
-    %64 = fp $anon/.:$query$20
-    %65 = fp $anon/.:$query$21
-    %66 = fp $anon/.:$query$22
+    %64 = fp $anon/.:$query$22$3601$3702$0
+    %65 = fp $anon/.:$query$22$3601$3702$1
+    %66 = fp $anon/.:$query$22$3601$3702$2
     %67 = newQueryStream stream clauses=3
     grouped = %67;
     %69 = println(groupKeys) -> bb24;
@@ -627,8 +627,8 @@ main() -> nil{
     %76 = println(%75) -> bb28;
   }
   bb28 {
-    %77 = fp $anon/.:$query$23
-    %78 = fp $anon/.:$query$24
+    %77 = fp $anon/.:$query$22$3980$4052$0
+    %78 = fp $anon/.:$query$22$3980$4052$1
     %79 = newQueryStream stream clauses=2
     checked = %79;
     %81 = streamNext checked
@@ -643,9 +643,9 @@ main() -> nil{
     %86 = println(%85) -> bb31;
   }
   bb31 {
-    %87 = fp $anon/.:$query$25
-    %88 = fp $anon/.:$query$26
-    %89 = fp $anon/.:$query$27
+    %87 = fp $anon/.:$query$22$4250$4338$0
+    %88 = fp $anon/.:$query$22$4250$4338$1
+    %89 = fp $anon/.:$query$22$4250$4338$2
     %90 = newQueryStream stream clauses=3
     limited = %90;
     %92 = println(limitEvents) -> bb32;

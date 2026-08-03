@@ -391,6 +391,29 @@ func TestResolveQueryExprStreamConstructType(t *testing.T) {
 	}
 }
 
+func TestResolveQueryExprContextualStreamConstructType(t *testing.T) {
+	resolver, cx := newTestQueryResolver()
+	env := cx.GetTypeEnv()
+	tyCtx := semtypes.ContextFrom(env)
+	streamDef := semtypes.NewStreamDefinition()
+	expectedTy := streamDef.Define(env, semtypes.INT, semtypes.NIL)
+	query := newQueryExpr(
+		newFromClause(newIntListLiteral(1, 2), nil, true),
+		newSelectClause(newIntLiteral(1)),
+	)
+
+	queryTy, _, ok := resolveQueryExpr(resolver, nil, query, expectedTy)
+	if !ok {
+		t.Fatalf("expected query expression to infer stream construction from its context")
+	}
+	if query.QueryConstructType != ast.TypeKind_NONE {
+		t.Fatalf("expected contextual stream construction not to rewrite the explicit construct type")
+	}
+	if !semtypes.IsSubtype(tyCtx, queryTy, expectedTy) {
+		t.Fatalf("expected contextual query result to be a subtype of stream<int>, got %v", queryTy)
+	}
+}
+
 func TestResolveQueryExprStreamCompletionType(t *testing.T) {
 	resolver, cx := newTestQueryResolver()
 	env := cx.GetTypeEnv()
